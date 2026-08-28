@@ -1,0 +1,25 @@
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+extend-exclude = "migrations"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "common", "config"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.development"
+python_files = ["test_*.py"]
+testpaths = ["apps"]
+# All tests here are function-based (def test_...); disabling class collection
+# stops pytest from false-positive-matching imported names like
+# TestimonialFactory/TestimonialSerializer as test classes.
+python_classes = ["NoOpTestClassPattern"]

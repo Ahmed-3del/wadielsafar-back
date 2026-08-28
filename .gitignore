@@ -1,0 +1,29 @@
+# This file mirrors the relevant sections of the repo-root .gitignore so this
+# directory is still sane if ever checked out standalone.
+
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+.env
+.env.local
+!.env.example
+
+*.sqlite3
+staticfiles/
+# Leading slash anchors this to the upload directory at the backend root;
+# without it, it also matched apps/media and excluded the app's source.
+/media/
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+.ruff_cache/
+
+.vscode/
+.idea/
+.DS_Store

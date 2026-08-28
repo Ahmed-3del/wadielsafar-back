@@ -1,0 +1,3 @@
+from common.permissions import ReadOnlyOrContentManager
+
+PartnerPermission = ReadOnlyOrContentManager
