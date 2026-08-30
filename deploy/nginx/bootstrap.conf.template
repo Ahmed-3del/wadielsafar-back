@@ -1,0 +1,24 @@
+# Pre-TLS vhost, installed by `deploy.sh init`. Its only real job is to expose
+# the ACME challenge webroot so `deploy.sh domain` can prove domain ownership.
+#
+# It deliberately does NOT proxy the API over plain HTTP: production settings
+# set SECURE_SSL_REDIRECT = True, so Django would 301 every request back to
+# https:// and the browser would loop until the certificate exists.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __DOMAIN__;
+
+    access_log /var/log/nginx/__DOMAIN__.access.log;
+    error_log  /var/log/nginx/__DOMAIN__.error.log;
+
+    location /.well-known/acme-challenge/ {
+        root __CERTBOT_WEBROOT__;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 503 "TLS is not configured yet. Run: deploy/deploy.sh domain\n";
+        add_header Content-Type text/plain always;
+    }
+}

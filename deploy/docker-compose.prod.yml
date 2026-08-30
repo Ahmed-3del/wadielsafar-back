@@ -1,0 +1,106 @@
+# Production stack. Always invoked through deploy/deploy.sh, which passes
+# --project-directory <repo root> --env-file <repo root>/.env, so every
+# relative path below resolves against the repository root.
+name: wadielsafar
+
+x-django: &django
+  build:
+    context: .
+    dockerfile: deploy/Dockerfile.prod
+  image: wadielsafar-back:latest
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    # config/celery.py does os.environ.setdefault(..., "development"); setting
+    # it here means the worker picks up production settings, not the fallback.
+    DJANGO_SETTINGS_MODULE: config.settings.production
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  volumes:
+    # Bind-mounted (not named volumes) so host nginx can serve them directly.
+    - ${DATA_DIR:-/srv/wadielsafar}/media:/app/media
+    - ${DATA_DIR:-/srv/wadielsafar}/staticfiles:/app/staticfiles
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # No `ports:` on purpose — Postgres is reachable only on the compose
+    # network. Use `deploy.sh psql` or an SSH tunnel to get at it.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  web:
+    <<: *django
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      RUN_COLLECTSTATIC: "true"
+    # Bound to loopback: nginx on the host is the only thing that should reach
+    # gunicorn. Publishing 0.0.0.0 here would bypass TLS entirely.
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8000}:8000"
+    command:
+      - gunicorn
+      - config.wsgi:application
+      - --bind=0.0.0.0:8000
+      - --workers=${GUNICORN_WORKERS:-3}
+      - --timeout=${GUNICORN_TIMEOUT:-60}
+      - --graceful-timeout=30
+      - --max-requests=1000
+      - --max-requests-jitter=100
+      - --access-logfile=-
+      - --error-logfile=-
+
+  celery_worker:
+    <<: *django
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      # Only `web` collects static; two containers running collectstatic
+      # --clear against the same bind mount would race.
+      RUN_COLLECTSTATIC: "false"
+    command:
+      - celery
+      - -A
+      - config
+      - worker
+      - -l
+      - info
+      - --concurrency=${CELERY_CONCURRENCY:-2}
+
+volumes:
+  pgdata:
+  redisdata:
