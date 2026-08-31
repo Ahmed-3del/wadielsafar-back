@@ -27,3 +27,7 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
+
+# Server-side deployment config and state (deploy/*.example files are tracked).
+deploy/deploy.env
+deploy/.last-good-commit

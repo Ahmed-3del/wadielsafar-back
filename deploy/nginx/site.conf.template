@@ -1,0 +1,87 @@
+# Final vhost, installed by `deploy.sh domain` once the certificate exists.
+
+upstream __APP_NAME___web {
+    server 127.0.0.1:__WEB_PORT__;
+    keepalive 16;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __DOMAIN__;
+
+    # Keep the challenge path reachable over plain HTTP — certbot re-validates
+    # on every renewal, and a blanket redirect to https breaks that.
+    location /.well-known/acme-challenge/ {
+        root __CERTBOT_WEBROOT__;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name __DOMAIN__;
+
+    ssl_certificate     /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    access_log /var/log/nginx/__DOMAIN__.access.log;
+    error_log  /var/log/nginx/__DOMAIN__.error.log;
+
+    # Image/document uploads go through apps/media; the default 1m is too small.
+    client_max_body_size __MAX_BODY__;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types application/json application/javascript text/css text/plain image/svg+xml;
+
+    location /.well-known/acme-challenge/ {
+        root __CERTBOT_WEBROOT__;
+        default_type "text/plain";
+    }
+
+    location /static/ {
+        alias __STATIC_DIR__/;
+        access_log off;
+        # Hashed filenames (CompressedManifestStaticFilesStorage) — safe to pin.
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /media/ {
+        alias __MEDIA_DIR__/;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public";
+        # No X-Frame-Options here, on purpose. config/urls.py notes that the
+        # website renders certificate PDFs from /media/ inside a cross-origin
+        # iframe; the global DENY that Django sends on its own responses would
+        # blank that viewer out. nginx serves these files directly, so as long
+        # as no add_header re-introduces the header, framing keeps working.
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
+    location / {
+        proxy_pass http://__APP_NAME___web;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        # production.py sets SECURE_PROXY_SSL_HEADER to this header — without
+        # it Django thinks every request is plain HTTP and 301-loops forever.
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header Connection        "";
+        proxy_read_timeout __PROXY_TIMEOUT__s;
+        proxy_redirect off;
+    }
+}

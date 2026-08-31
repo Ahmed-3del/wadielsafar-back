@@ -57,6 +57,23 @@ applied automatically — run them once via:
 docker compose exec backend python manage.py migrate
 ```
 
+## Deploying to a server
+
+Production deployment lives in [deploy/](deploy/) — a Compose stack (gunicorn,
+celery, Postgres, Redis) behind host nginx with a Let's Encrypt certificate.
+One script drives all of it:
+
+```bash
+./deploy/deploy.sh bootstrap   # once per server: docker, nginx, certbot, ufw
+./deploy/deploy.sh init        # first deployment: .env, build, migrate, start
+./deploy/deploy.sh domain      # DNS check, certificate, TLS vhost, auto-renewal
+./deploy/deploy.sh update      # pull, rebuild, migrate, restart, health-check
+```
+
+`update` backs up the database first and rolls the code back automatically if
+the new revision fails its health check. Full runbook, including the domain
+authentication steps and troubleshooting, in [deploy/README.md](deploy/README.md).
+
 ## Tests & linting
 
 ```bash

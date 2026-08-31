@@ -1,0 +1,46 @@
+# Production image. Differs from the repo-root Dockerfile (development) in
+# three ways: it installs requirements/production.txt (gunicorn, whitenoise,
+# sentry), it runs as a non-root user, and it never falls back to development
+# settings — config/wsgi.py raises if DJANGO_SETTINGS_MODULE is unset.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DJANGO_SETTINGS_MODULE=config.settings.production
+
+WORKDIR /app
+
+# psycopg[binary] and Pillow ship manylinux wheels, so no compiler is needed —
+# libpq5 (the runtime lib, not libpq-dev) and curl for the healthcheck are enough.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements/ requirements/
+RUN pip install -r requirements/production.txt
+
+COPY . .
+
+# Fixed uid/gid: media/ and staticfiles/ are bind-mounted from the host, and
+# deploy.sh chowns those host directories to this same id so writes line up.
+RUN groupadd -g 10001 app \
+    && useradd -u 10001 -g 10001 -m -s /usr/sbin/nologin app \
+    && mkdir -p /app/media /app/staticfiles \
+    && chown -R app:app /app
+
+COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+USER app
+EXPOSE 8000
+
+# production.py sets SECURE_SSL_REDIRECT, so a plain HTTP probe would get a 301
+# instead of a 200 — X-Forwarded-Proto: https is what makes this a real check.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -fsS -H 'Host: 127.0.0.1' -H 'X-Forwarded-Proto: https' \
+        http://127.0.0.1:8000/api/v1/health/ || exit 1
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
