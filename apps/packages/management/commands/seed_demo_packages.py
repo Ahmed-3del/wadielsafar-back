@@ -31,6 +31,12 @@ ISTANBUL_IMAGE = UNSPLASH.format("1541432901042-2d8bd64b4a9b")
 GEORGIA_IMAGE = UNSPLASH.format("1565008447742-97f6f38c985c")
 MALDIVES_IMAGE = UNSPLASH.format("1514282401047-d79a71a590e8")
 
+ALULA_IMAGE = UNSPLASH.format("1591604466107-ec97de577aff")
+CAIRO_IMAGE = UNSPLASH.format("1572252009286-268acec5ca0a")
+MAKKAH_IMAGE = UNSPLASH.format("1591604129939-f1efa4d9f7fa")
+KL_IMAGE = UNSPLASH.format("1596422846543-75c6fc197f07")
+BAKU_IMAGE = UNSPLASH.format("1596394516093-501ba68a0ba6")
+SALALAH_IMAGE = UNSPLASH.format("1547234935-80c7145ec969")
 PACKAGES = [
     {
         "slug": "dubai-family-package",
@@ -423,6 +429,308 @@ PACKAGES = [
                 "Departure",
                 "الانتقال بالطائرة المائية إلى ماليه، ثم رحلة العودة.",
                 "Seaplane back to Malé, then the return flight.",
+            ),
+        ],
+    },
+    {
+        "slug": "alula-heritage-weekend",
+        "title_ar": "نهاية أسبوع في العلا",
+        "title_en": "AlUla Heritage Weekend",
+        "destination": "alula",
+        "category": "cultural",
+        "duration_days": 3,
+        "price_from": Decimal("3400.00"),
+        "cover_image": ALULA_IMAGE,
+        "is_featured": True,
+        "description_ar": (
+            "ثلاثة أيام بين مقابر الحِجر النبطية والبلدة القديمة وجبل الفيل، "
+            "بإقامة في وادي عشار وجولة مسائية لمشاهدة النجوم.\n\n"
+            "برنامج قصير يناسب إجازة نهاية الأسبوع، ويمكن تمديده بليلة إضافية."
+        ),
+        "description_en": (
+            "Three days between the Nabataean tombs of Hegra, the old town and Elephant "
+            "Rock, staying in Ashar Valley with an evening stargazing tour.\n\n"
+            "A short programme built for a long weekend, extendable by a night."
+        ),
+        "included_ar": [
+            "طيران داخلي ذهاب وعودة",
+            "إقامة ليلتين مع الإفطار",
+            "تذاكر الحِجر والبلدة القديمة",
+            "التنقلات الداخلية مع سائق",
+        ],
+        "included_en": [
+            "Return domestic flights",
+            "Two nights with breakfast",
+            "Hegra and old town tickets",
+            "Local transfers with a driver",
+        ],
+        "itinerary": [
+            (
+                "الوصول والبلدة القديمة",
+                "Arrival and the old town",
+                "الوصول ظهرًا والاستقرار، ثم جولة مسائية في بلدة العلا القديمة.",
+                "Arrive at midday and settle in, then an evening walk through AlUla old town.",
+            ),
+            (
+                "الحِجر وجبل الفيل",
+                "Hegra and Elephant Rock",
+                "جولة صباحية في مقابر الحِجر، ووقت حر عند جبل الفيل عند الغروب.",
+                "A morning tour of the Hegra tombs, and free time at Elephant Rock at sunset.",
+            ),
+            (
+                "مرايا والعودة",
+                "Maraya and departure",
+                "زيارة مبنى مرايا ثم التوجه إلى المطار.",
+                "Visit the Maraya building, then transfer to the airport.",
+            ),
+        ],
+    },
+    {
+        "slug": "umrah-comfort-package",
+        "title_ar": "باقة العمرة المريحة",
+        "title_en": "Umrah Comfort Package",
+        "destination": "makkah",
+        "category": "cultural",
+        "duration_days": 4,
+        "price_from": Decimal("2800.00"),
+        "cover_image": MAKKAH_IMAGE,
+        "is_featured": True,
+        "description_ar": (
+            "أربعة أيام بإقامة قريبة من المسجد الحرام، ونقل من المطار وإليه، "
+            "وبرنامج يناسب العائلات وكبار السن.\n\n"
+            "يمكن إضافة ليالٍ في المدينة المنورة ضمن البرنامج نفسه."
+        ),
+        "description_en": (
+            "Four days in a hotel close to the Haram, with airport transfers both ways "
+            "and a programme that suits families and older travellers.\n\n"
+            "Nights in Madinah can be added to the same booking."
+        ),
+        "included_ar": [
+            "إقامة 3 ليالٍ قرب الحرم مع الإفطار",
+            "الاستقبال والتوصيل من المطار",
+            "التنقلات بين مكة والمدينة عند الطلب",
+            "مرافقة ميدانية طوال البرنامج",
+        ],
+        "included_en": [
+            "Three nights near the Haram with breakfast",
+            "Airport pick-up and drop-off",
+            "Makkah–Madinah transfers on request",
+            "On-the-ground support throughout",
+        ],
+        "itinerary": [
+            (
+                "الوصول والاستقبال",
+                "Arrival",
+                "الاستقبال في المطار والتوجه إلى الفندق، ثم أداء العمرة.",
+                "Airport welcome and transfer to the hotel, then performing Umrah.",
+            ),
+            (
+                "يوم في الحرم",
+                "A day at the Haram",
+                "يوم مفتوح للصلاة والعبادة مع الإفطار في الفندق.",
+                "An open day for prayer and worship, with breakfast at the hotel.",
+            ),
+            (
+                "زيارة المعالم",
+                "Landmarks",
+                "جولة اختيارية إلى المعالم التاريخية حول مكة.",
+                "An optional tour of the historic sites around Makkah.",
+            ),
+            (
+                "المغادرة",
+                "Departure",
+                "طواف الوداع ثم التوصيل إلى المطار.",
+                "The farewell tawaf, then a transfer to the airport.",
+            ),
+        ],
+    },
+    {
+        "slug": "cairo-nile-discovery",
+        "title_ar": "القاهرة والنيل",
+        "title_en": "Cairo and the Nile",
+        "destination": "cairo",
+        "category": "cultural",
+        "duration_days": 5,
+        "price_from": Decimal("4300.00"),
+        "cover_image": CAIRO_IMAGE,
+        "is_featured": False,
+        "description_ar": (
+            "خمسة أيام بين الأهرامات والمتحف المصري الكبير وخان الخليلي، "
+            "مع عشاء على مركب نيلي.\n\n"
+            "يمكن إضافة رحلة داخلية إلى الأقصر وأسوان."
+        ),
+        "description_en": (
+            "Five days between the pyramids, the Grand Egyptian Museum and Khan el-Khalili, "
+            "with dinner on a Nile boat.\n\n"
+            "A domestic add-on to Luxor and Aswan can be arranged."
+        ),
+        "included_ar": [
+            "طيران ذهاب وعودة",
+            "إقامة 4 ليالٍ مع الإفطار",
+            "تذاكر الأهرامات والمتحف",
+            "مرشد ناطق بالعربية",
+        ],
+        "included_en": [
+            "Return flights",
+            "Four nights with breakfast",
+            "Pyramids and museum tickets",
+            "Arabic-speaking guide",
+        ],
+        "itinerary": [
+            (
+                "الوصول",
+                "Arrival",
+                "الاستقبال من المطار والاستقرار في الفندق.",
+                "Airport welcome and check-in.",
+            ),
+            (
+                "الأهرامات وأبو الهول",
+                "The pyramids and the Sphinx",
+                "يوم كامل في الجيزة مع مرشد.",
+                "A full day at Giza with a guide.",
+            ),
+            (
+                "المتحف المصري الكبير",
+                "The Grand Egyptian Museum",
+                "جولة صباحية في المتحف، ووقت حر بعد الظهر.",
+                "A morning at the museum, with free time in the afternoon.",
+            ),
+            (
+                "خان الخليلي والنيل",
+                "Khan el-Khalili and the Nile",
+                "تسوّق في خان الخليلي وعشاء على مركب نيلي.",
+                "Shopping in Khan el-Khalili and dinner on a Nile boat.",
+            ),
+            (
+                "المغادرة",
+                "Departure",
+                "وقت حر ثم التوصيل إلى المطار.",
+                "Free time, then a transfer to the airport.",
+            ),
+        ],
+    },
+    {
+        "slug": "kuala-lumpur-family-trip",
+        "title_ar": "كوالالمبور العائلية",
+        "title_en": "Kuala Lumpur Family Trip",
+        "destination": "kuala-lumpur",
+        "category": "family",
+        "duration_days": 6,
+        "price_from": Decimal("7200.00"),
+        "cover_image": KL_IMAGE,
+        "is_featured": False,
+        "description_ar": (
+            "ستة أيام بين المدينة والمرتفعات، بمطاعم حلال في كل مكان "
+            "وبرنامج يناسب الأطفال.\n\n"
+            "يمكن إضافة ليالٍ في لنكاوي أو بينانج."
+        ),
+        "description_en": (
+            "Six days between the city and the highlands, with halal food everywhere and "
+            "a programme that works for children.\n\n"
+            "Nights in Langkawi or Penang can be added."
+        ),
+        "included_ar": [
+            "طيران ذهاب وعودة",
+            "إقامة 5 ليالٍ مع الإفطار",
+            "جولة المدينة والبرجين التوأم",
+            "رحلة يوم كامل إلى مرتفعات جنتنج",
+        ],
+        "included_en": [
+            "Return flights",
+            "Five nights with breakfast",
+            "City tour and the Twin Towers",
+            "A full-day trip to Genting Highlands",
+        ],
+        "itinerary": [
+            ("الوصول", "Arrival", "الاستقبال والاستقرار في الفندق.", "Welcome and check-in."),
+            (
+                "جولة المدينة",
+                "City tour",
+                "البرجان التوأم وكهوف باتو والمسجد الوطني.",
+                "The Twin Towers, Batu Caves and the National Mosque.",
+            ),
+            (
+                "مرتفعات جنتنج",
+                "Genting Highlands",
+                "التلفريك ومدينة الملاهي.",
+                "The cable car and the theme park.",
+            ),
+            (
+                "يوم حر",
+                "Free day",
+                "تسوّق في بوكيت بينتانج أو زيارة حديقة الطيور.",
+                "Shopping in Bukit Bintang or a visit to the bird park.",
+            ),
+            (
+                "بوتراجايا",
+                "Putrajaya",
+                "جولة نصف يوم في المدينة الإدارية.",
+                "A half-day tour of the administrative city.",
+            ),
+            (
+                "المغادرة",
+                "Departure",
+                "وقت حر ثم التوصيل إلى المطار.",
+                "Free time, then a transfer to the airport.",
+            ),
+        ],
+    },
+    {
+        "slug": "salalah-khareef-escape",
+        "title_ar": "خريف صلالة",
+        "title_en": "Salalah Khareef Escape",
+        "destination": "salalah",
+        "category": "adventure",
+        "duration_days": 4,
+        "price_from": Decimal("3900.00"),
+        "cover_image": SALALAH_IMAGE,
+        "is_featured": False,
+        "description_ar": (
+            "أربعة أيام في موسم الخريف: ضباب وشلالات وأودية خضراء، "
+            "وشواطئ هادئة على بحر العرب.\n\n"
+            "الموسم قصير — من يونيو إلى سبتمبر — ويُحجز مبكرًا."
+        ),
+        "description_en": (
+            "Four days in the khareef season: mist, waterfalls and green wadis, with quiet "
+            "beaches on the Arabian Sea.\n\n"
+            "The season is short — June to September — and books up early."
+        ),
+        "included_ar": [
+            "طيران ذهاب وعودة",
+            "إقامة 3 ليالٍ مع الإفطار",
+            "جولة الأودية والشلالات",
+            "سيارة مع سائق ليوم كامل",
+        ],
+        "included_en": [
+            "Return flights",
+            "Three nights with breakfast",
+            "Wadis and waterfalls tour",
+            "A car with a driver for a full day",
+        ],
+        "itinerary": [
+            (
+                "الوصول",
+                "Arrival",
+                "الاستقبال والاستقرار، ووقت حر مساءً.",
+                "Welcome, check-in and a free evening.",
+            ),
+            (
+                "وادي دربات",
+                "Wadi Darbat",
+                "الشلالات والبحيرات والمروج الخضراء.",
+                "The waterfalls, the lakes and the green meadows.",
+            ),
+            (
+                "المغسيل وطاقة",
+                "Mughsail and Taqah",
+                "الشواطئ والنافورات الطبيعية.",
+                "The beaches and the natural blowholes.",
+            ),
+            (
+                "المغادرة",
+                "Departure",
+                "سوق الحصن ثم التوصيل إلى المطار.",
+                "Al Husn souq, then a transfer to the airport.",
             ),
         ],
     },
