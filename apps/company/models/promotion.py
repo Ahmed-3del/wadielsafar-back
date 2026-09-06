@@ -1,6 +1,7 @@
 from django.db import models
 
 from common.utilities import TimeStampedModel
+from common.validators import validate_internal_path
 
 
 class PromotionIconChoices(models.TextChoices):
@@ -38,6 +39,14 @@ class Promotion(TimeStampedModel):
     icon = models.CharField(
         max_length=10, choices=PromotionIconChoices.choices, default=PromotionIconChoices.TAG
     )
+    # Where "claim this offer" leads. Blank sends the reader to the contact
+    # form carrying the code, which is the right answer for an offer an agent
+    # applies by hand — but an offer tied to one page should lead there.
+    link = models.CharField(max_length=200, blank=True, validators=[validate_internal_path])
+    # The words on the button. Blank uses the site's own wording, so an editor
+    # only fills this in when this offer needs its own call to action.
+    cta_label_ar = models.CharField(max_length=60, blank=True)
+    cta_label_en = models.CharField(max_length=60, blank=True)
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 

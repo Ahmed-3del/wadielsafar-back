@@ -23,6 +23,7 @@ PROMOTIONS = [
         "badge_en": "15%",
         "code": "WELCOME15",
         "icon": PromotionIconChoices.TAG,
+        "link": "",
         # No announced end date: the card shows the offer without a timer.
         "days_from_now": None,
     },
@@ -37,6 +38,9 @@ PROMOTIONS = [
         "badge_en": "",
         "code": "",
         "icon": PromotionIconChoices.CLOCK,
+        # This one has a page of its own to send people to; the other two are
+        # applied by an agent, so they lead to the contact form with the code.
+        "link": "/packages",
         # Demo only — see the warning printed at the end of this command.
         "days_from_now": 14,
     },
@@ -49,6 +53,7 @@ PROMOTIONS = [
         "badge_en": "10%",
         "code": "",
         "icon": PromotionIconChoices.GIFT,
+        "link": "",
         "days_from_now": None,
     },
 ]

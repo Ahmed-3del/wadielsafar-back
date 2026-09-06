@@ -229,3 +229,42 @@ def test_a_promotion_with_no_end_date_is_allowed(clean_company):
 
     assert response.status_code == 201, response.data
     assert Promotion.objects.get().ends_at is None
+
+
+def test_a_promotion_link_must_be_a_path_on_this_site(clean_company):
+    """The website renders it through a localised Link, so an absolute URL
+    would come out as /ar/https://example.com."""
+    response = as_editor().post(
+        "/api/v1/company/promotions/",
+        {"title_ar": "عرض", "title_en": "Offer", "link": "https://example.com"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_a_promotion_can_point_its_claim_button_at_a_page(clean_company):
+    response = as_editor().post(
+        "/api/v1/company/promotions/",
+        {
+            "title_ar": "عرض الباقات",
+            "title_en": "Package offer",
+            "link": "/packages",
+            "cta_label_en": "See the packages",
+        },
+    )
+
+    assert response.status_code == 201, response.data
+    assert response.data["link"] == "/packages"
+    assert response.data["cta_label_en"] == "See the packages"
+
+
+def test_a_blank_promotion_link_is_allowed(clean_company):
+    """Blank means the contact form, carrying the offer and its code — the
+    right answer for a discount an agent applies by hand."""
+    response = as_editor().post(
+        "/api/v1/company/promotions/",
+        {"title_ar": "عرض", "title_en": "Offer", "code": "WELCOME15"},
+    )
+
+    assert response.status_code == 201, response.data
+    assert response.data["link"] == ""

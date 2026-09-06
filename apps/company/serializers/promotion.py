@@ -17,6 +17,9 @@ class PromotionSerializer(serializers.ModelSerializer):
             "code",
             "ends_at",
             "icon",
+            "link",
+            "cta_label_ar",
+            "cta_label_en",
             "order",
             "is_active",
         )
