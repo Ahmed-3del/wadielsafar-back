@@ -59,3 +59,11 @@ class SocialPlatformChoices(models.TextChoices):
     YOUTUBE = "YOUTUBE", "YouTube"
     LINKEDIN = "LINKEDIN", "LinkedIn"
     WHATSAPP = "WHATSAPP", "WhatsApp"
+
+
+class VisaEntryChoices(models.TextChoices):
+    """How many times the visa lets you in. Blank where it varies by applicant
+    — a wrong answer here sends someone to an embassy for nothing."""
+
+    SINGLE = "SINGLE", "Single entry"
+    MULTIPLE = "MULTIPLE", "Multiple entry"

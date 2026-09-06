@@ -19,6 +19,8 @@ class VisaTypeSerializer(serializers.ModelSerializer):
             "name_ar",
             "name_en",
             "purpose",
+            "entry_type",
+            "cover_image",
             "requirements_ar",
             "requirements_en",
             "price",

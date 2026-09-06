@@ -80,7 +80,11 @@ DESTINATIONS = [
     ),
     (
         "sarajevo", "سراييفو", "Sarajevo", "البوسنة والهرسك", "Bosnia and Herzegovina",
-        "1541849546-216549ae216d",
+        # Blank on purpose. The id that stood here was Prague — St. Nicholas in
+        # Malá Strana, with the Týn spires behind it — filed as Sarajevo. It
+        # loaded, so it survived a check that only looked at status codes. The
+        # brand block is the honest placeholder until a real photo is uploaded.
+        "",
         "جبال وأنهار وبلدة عثمانية قديمة، ووجهة صيفية معتدلة الحرارة والأسعار.",
         "Mountains, rivers and an old Ottoman quarter — a summer destination that is mild in both climate and cost.",
     ),

@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 from rest_framework.test import APIClient
 
+from apps.inquiries.models import InquiryField
 from apps.inquiries.tests.factories import InquiryFactory
 from apps.users.tests.factories import UserFactory
 from common.constants import InquiryStatusChoices, RoleChoices
@@ -67,3 +68,86 @@ def test_sales_staff_can_list_and_update_status():
     assert update_response.status_code == 200
     inquiry.refresh_from_db()
     assert inquiry.status == InquiryStatusChoices.CONTACTED
+
+
+# ------------------------------------------------------- contact form fields
+
+
+def test_anyone_can_read_the_contact_form_questions():
+    """The public contact form renders them, so they cannot be staff-only."""
+    InquiryField.objects.create(
+        service_type="FLIGHT", key="from", label_ar="من", label_en="From"
+    )
+
+    response = APIClient().get("/api/v1/inquiries/fields/")
+
+    assert response.status_code == 200
+    assert response.data["count"] == 1
+
+
+def test_the_public_cannot_change_what_the_form_asks():
+    response = APIClient().post(
+        "/api/v1/inquiries/fields/",
+        {"service_type": "FLIGHT", "key": "from", "label_ar": "من", "label_en": "From"},
+    )
+
+    assert response.status_code in (401, 403)
+
+
+def test_a_choice_field_needs_the_same_options_in_both_languages():
+    """The website zips the two lists by position, so a missing line would put
+    an Arabic label on an English answer."""
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service_type": "FLIGHT",
+            "key": "cabin",
+            "label_ar": "الدرجة",
+            "label_en": "Cabin",
+            "field_type": "SELECT",
+            "options_ar": "سياحية\nأعمال",
+            "options_en": "Economy",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_options_are_served_zipped_for_the_form_to_render():
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+    client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service_type": "HOTEL",
+            "key": "stars",
+            "label_ar": "التصنيف",
+            "label_en": "Rating",
+            "field_type": "SELECT",
+            "options_ar": "5 نجوم\n4 نجوم",
+            "options_en": "5 stars\n4 stars",
+        },
+    )
+
+    row = APIClient().get("/api/v1/inquiries/fields/").data["results"][0]
+
+    assert row["options"] == [
+        {"ar": "5 نجوم", "en": "5 stars"},
+        {"ar": "4 نجوم", "en": "4 stars"},
+    ]
+
+
+def test_two_services_can_ask_the_same_question():
+    """`key` is unique per service, not globally: a flight and a cruise both
+    have a departure date and both file it under the same name."""
+    InquiryField.objects.create(
+        service_type="FLIGHT", key="depart", label_ar="المغادرة", label_en="Departure"
+    )
+    InquiryField.objects.create(
+        service_type="CRUISE", key="depart", label_ar="الإبحار", label_en="Sailing"
+    )
+
+    assert InquiryField.objects.count() == 2

@@ -35,7 +35,10 @@ LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 DATA_DIR="${DATA_DIR:-/srv/wadielsafar}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 WEB_PORT="${WEB_PORT:-8000}"
-MAX_BODY="${MAX_BODY:-50m}"
+# Above apps/media's MAX_VIDEO_BYTES (64MB), with room for multipart overhead.
+# At 50m nginx returned 413 before Django ever saw the upload, so the panel
+# showed a network error rather than the serializer's size message.
+MAX_BODY="${MAX_BODY:-72m}"
 PROXY_TIMEOUT="${PROXY_TIMEOUT:-60}"
 CERTBOT_WEBROOT="${CERTBOT_WEBROOT:-/var/www/certbot}"
 HEALTH_PATH="${HEALTH_PATH:-/api/v1/health/}"

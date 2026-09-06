@@ -1,3 +1,3 @@
-from apps.services.models.service import Service
+from apps.services.models.service import Service, ServiceIconChoices
 
-__all__ = ["Service"]
+__all__ = ["Service", "ServiceIconChoices"]

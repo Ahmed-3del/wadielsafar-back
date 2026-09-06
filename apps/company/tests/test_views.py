@@ -1,10 +1,11 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.company.models import Branch, Certificate, SocialLink
+from apps.company.models import Branch, Certificate, Promotion, SocialLink
 from apps.company.tests.factories import (
     BranchFactory,
     CertificateFactory,
+    PromotionFactory,
     SocialLinkFactory,
 )
 from apps.users.tests.factories import UserFactory
@@ -20,6 +21,7 @@ def clean_company():
     Branch.objects.all().delete()
     SocialLink.objects.all().delete()
     Certificate.objects.all().delete()
+    Promotion.objects.all().delete()
 
 
 def as_editor():
@@ -175,3 +177,55 @@ def test_the_shipped_social_profiles_are_there():
 
     platforms = {row["platform"] for row in response.data["results"]}
     assert {"FACEBOOK", "INSTAGRAM", "X", "TIKTOK", "SNAPCHAT"} <= platforms
+
+
+# ----------------------------------------------------------------- promotions
+
+
+def test_public_sees_only_active_promotions(clean_company):
+    PromotionFactory(is_active=True)
+    PromotionFactory(is_active=False)
+
+    assert APIClient().get("/api/v1/company/promotions/").data["count"] == 1
+
+
+def test_public_cannot_change_a_discount(clean_company):
+    """The percentages on the homepage are a commercial commitment, so writing
+    one is an editor's job and nobody else's."""
+    response = APIClient().post(
+        "/api/v1/company/promotions/",
+        {"title_ar": "عرض", "title_en": "Offer", "badge_en": "90%"},
+    )
+
+    assert response.status_code in (401, 403)
+    assert Promotion.objects.count() == 0
+
+
+def test_editor_can_publish_a_promotion_with_a_deadline(clean_company):
+    """The homepage counts down to `ends_at` in public, so it has to survive
+    the round trip exactly as it was set."""
+    response = as_editor().post(
+        "/api/v1/company/promotions/",
+        {
+            "title_ar": "عرض الحجز المبكر",
+            "title_en": "Early bird",
+            "icon": "CLOCK",
+            "ends_at": "2027-01-31T20:59:00Z",
+        },
+    )
+
+    assert response.status_code == 201, response.data
+    promotion = Promotion.objects.get()
+    assert promotion.ends_at.isoformat() == "2027-01-31T20:59:00+00:00"
+
+
+def test_a_promotion_with_no_end_date_is_allowed(clean_company):
+    """A standing offer has no deadline, and the card then shows no timer
+    rather than counting down to an invented one."""
+    response = as_editor().post(
+        "/api/v1/company/promotions/",
+        {"title_ar": "خصم العميل الجديد", "title_en": "New customer", "code": "WELCOME15"},
+    )
+
+    assert response.status_code == 201, response.data
+    assert Promotion.objects.get().ends_at is None

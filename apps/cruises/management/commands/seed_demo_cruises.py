@@ -13,7 +13,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.cruises.models import Cruise, CruiseItinerary
+from apps.cruises.models import Cruise, CruiseItinerary, CruisePort
 from apps.destinations.models import Destination
 from common.utilities import guard_demo_write, photo
 
@@ -27,6 +27,7 @@ CRUISES = [
         "destination": "jeddah",
         "port_ar": "جدة",
         "port_en": "Jeddah",
+        "port_code": "jeddah",
         "days_out": 45,
         "nights": 7,
         "price": "6200.00",
@@ -95,6 +96,7 @@ CRUISES = [
         "destination": "dubai",
         "port_ar": "دبي",
         "port_en": "Dubai",
+        "port_code": "dubai-port-rashid",
         "days_out": 38,
         "nights": 5,
         "price": "4100.00",
@@ -151,6 +153,7 @@ CRUISES = [
         "destination": "istanbul",
         "port_ar": "إسطنبول",
         "port_en": "Istanbul",
+        "port_code": "istanbul-port",
         "days_out": 70,
         "nights": 8,
         "price": "7400.00",
@@ -195,6 +198,7 @@ CRUISES = [
         "destination": "phuket",
         "port_ar": "سنغافورة",
         "port_en": "Singapore",
+        "port_code": "singapore-port",
         "days_out": 85,
         "nights": 6,
         "price": "5800.00",
@@ -232,6 +236,7 @@ CRUISES = [
         "destination": "jeddah",
         "port_ar": "جدة",
         "port_en": "Jeddah",
+        "port_code": "jeddah",
         "days_out": 100,
         "nights": 4,
         "price": "3600.00",
@@ -261,6 +266,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         guard_demo_write(options["force"])
         today = timezone.localdate()
+        # Keyed by code so a sailing links to the port it leaves from. Missing
+        # is survivable — the cruise still publishes, it just will not answer
+        # the homepage's "sailing from Italy" question until someone links it.
+        ports = {port.code: port for port in CruisePort.objects.all()}
 
         written = 0
         for spec in CRUISES:
@@ -274,6 +283,9 @@ class Command(BaseCommand):
                     "cruise_line_ar": spec["line_ar"],
                     "cruise_line_en": spec["line_en"],
                     "destination": destination,
+                    "departure_port": ports.get(spec["port_code"]),
+                    # Kept as text too: the card prints what the cruise line
+                    # calls the port, which is not always the catalogue name.
                     "departure_port_ar": spec["port_ar"],
                     "departure_port_en": spec["port_en"],
                     "description_ar": spec["desc_ar"],

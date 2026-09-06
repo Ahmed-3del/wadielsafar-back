@@ -21,6 +21,20 @@ class Cruise(TimeStampedModel):
         blank=True,
         related_name="cruises",
     )
+    # The port as a record, so the homepage can offer a country and then its
+    # ports and have the answer actually filter. Nullable: a sailing can be
+    # published before anyone links it, and the two text columns below still
+    # carry what the card prints.
+    departure_port = models.ForeignKey(
+        "cruises.CruisePort",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cruises",
+    )
+    # Kept alongside the link rather than derived from it: a cruise line writes
+    # "Dubai (Port Rashid)" on a brochure and the card should print that, not a
+    # normalised catalogue name. The panel fills these from the port on pick.
     departure_port_ar = models.CharField(max_length=150, blank=True)
     departure_port_en = models.CharField(max_length=150, blank=True)
     description_ar = models.TextField(blank=True)

@@ -16,6 +16,7 @@ class HomeSectionChoices(models.TextChoices):
     """
 
     SERVICES = "SERVICES", "What we offer"
+    SAVINGS = "SAVINGS", "Ways to save"
     EXPLORER = "EXPLORER", "Budget explorer"
     DESTINATIONS = "DESTINATIONS", "Popular destinations"
     PACKAGES = "PACKAGES", "Featured packages"

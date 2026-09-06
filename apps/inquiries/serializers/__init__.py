@@ -3,5 +3,11 @@ from apps.inquiries.serializers.inquiry import (
     InquirySerializer,
     InquiryStatusUpdateSerializer,
 )
+from apps.inquiries.serializers.inquiry_field import InquiryFieldSerializer
 
-__all__ = ["InquiryCreateSerializer", "InquirySerializer", "InquiryStatusUpdateSerializer"]
+__all__ = [
+    "InquiryCreateSerializer",
+    "InquirySerializer",
+    "InquiryStatusUpdateSerializer",
+    "InquiryFieldSerializer",
+]

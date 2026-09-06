@@ -1,6 +1,6 @@
 import factory
 
-from apps.company.models import Branch, Certificate, SocialLink
+from apps.company.models import Branch, Certificate, Promotion, SocialLink
 
 
 class CertificateFactory(factory.django.DjangoModelFactory):
@@ -34,4 +34,16 @@ class SocialLinkFactory(factory.django.DjangoModelFactory):
 
     platform = "FACEBOOK"
     url = factory.Sequence(lambda n: f"https://facebook.com/profile{n}")
+    is_active = True
+
+
+class PromotionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Promotion
+
+    title_ar = factory.Sequence(lambda n: f"عرض {n}")
+    title_en = factory.Sequence(lambda n: f"Promotion {n}")
+    badge_ar = "15%"
+    badge_en = "15%"
+    icon = "TAG"
     is_active = True

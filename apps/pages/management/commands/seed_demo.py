@@ -25,19 +25,29 @@ from django.core.management.base import BaseCommand
 
 from apps.pages.models import HomeSection
 
-# Order matters: hotels, packages and cruises all point at a destination.
+# Order matters: hotels, packages and cruises all point at a destination, and
+# a cruise links to the port it sails from.
 SEEDERS = [
     "seed_demo_destinations",
+    "seed_cruise_ports",
     "seed_demo_hotels",
     "seed_demo_packages",
     "seed_demo_flights",
     "seed_demo_cruises",
     "seed_demo_visas",
     "seed_demo_offers",
+    "seed_demo_services",
+    "seed_demo_branches",
+    "seed_demo_promotions",
     # Reference data, not demo content — safe to re-run and needed for the
     # departure and arrival pickers to have anything in them.
     "seed_airports",
+    "seed_inquiry_fields",
 ]
+
+# These two carry no --force flag: they are reference data rather than content,
+# so there is nothing of the client's for them to overwrite.
+REFERENCE_SEEDERS = {"seed_airports", "seed_cruise_ports", "seed_inquiry_fields"}
 
 
 class Command(BaseCommand):
@@ -53,8 +63,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         for name in SEEDERS:
             self.stdout.write(self.style.HTTP_INFO(f"→ {name}"))
-            # seed_airports is reference data and takes no --force flag.
-            if name == "seed_airports":
+            if name in REFERENCE_SEEDERS:
                 call_command(name)
             else:
                 call_command(name, force=options["force"])

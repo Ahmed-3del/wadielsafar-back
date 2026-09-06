@@ -10,6 +10,7 @@ from common.constants.status import (
     NavGroupChoices,
     ServiceTypeChoices,
     SocialPlatformChoices,
+    VisaEntryChoices,
     VisaPurposeChoices,
 )
 
@@ -24,4 +25,5 @@ __all__ = [
     "VisaPurposeChoices",
     "NavGroupChoices",
     "SocialPlatformChoices",
+    "VisaEntryChoices",
 ]

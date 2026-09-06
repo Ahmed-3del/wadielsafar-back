@@ -14,6 +14,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             "description_ar",
             "description_en",
             "icon",
+            "link",
             "image",
             "order",
             "is_active",

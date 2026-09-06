@@ -1,6 +1,6 @@
 from django.db import models
 
-from common.constants import VisaPurposeChoices
+from common.constants import VisaEntryChoices, VisaPurposeChoices
 from common.utilities import TimeStampedModel
 
 
@@ -15,6 +15,14 @@ class VisaType(TimeStampedModel):
     purpose = models.CharField(
         max_length=20, choices=VisaPurposeChoices.choices, blank=True
     )
+    # Blank rather than defaulted: for some visas it depends on the
+    # applicant, and guessing sends someone to an embassy for nothing.
+    entry_type = models.CharField(
+        max_length=10, choices=VisaEntryChoices.choices, blank=True
+    )
+    # Overrides the country photo for one visa — an Umrah visa wants Makkah,
+    # not a skyline. Blank falls back to the country's own image.
+    cover_image = models.URLField(max_length=500, blank=True, null=True)
     requirements_ar = models.TextField(blank=True)
     requirements_en = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)

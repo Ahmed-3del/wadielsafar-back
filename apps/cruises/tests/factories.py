@@ -1,6 +1,6 @@
 import factory
 
-from apps.cruises.models import Cruise, CruiseItinerary
+from apps.cruises.models import Cruise, CruiseItinerary, CruisePort
 
 
 class CruiseFactory(factory.django.DjangoModelFactory):
@@ -21,3 +21,18 @@ class CruiseItineraryFactory(factory.django.DjangoModelFactory):
     day_number = factory.Sequence(lambda n: n + 1)
     port_ar = "ميناء"
     port_en = "Port"
+
+
+class CruisePortFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CruisePort
+
+    code = factory.Sequence(lambda n: f"port-{n}")
+    name_ar = factory.Sequence(lambda n: f"ميناء {n}")
+    name_en = factory.Sequence(lambda n: f"Port {n}")
+    city_ar = "مدينة"
+    city_en = "City"
+    country_ar = "الإمارات"
+    country_en = "United Arab Emirates"
+    country_code = "AE"
+    is_active = True

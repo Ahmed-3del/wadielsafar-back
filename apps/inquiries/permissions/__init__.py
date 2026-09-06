@@ -1,3 +1,6 @@
-from apps.inquiries.permissions.inquiry_permissions import InquiryAdminPermission
+from apps.inquiries.permissions.inquiry_permissions import (
+    InquiryAdminPermission,
+    InquiryFieldPermission,
+)
 
-__all__ = ["InquiryAdminPermission"]
+__all__ = ["InquiryAdminPermission", "InquiryFieldPermission"]

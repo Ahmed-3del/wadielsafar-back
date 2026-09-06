@@ -12,7 +12,9 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Q
 
+from apps.destinations.models import Destination
 from apps.visas.models import VisaCountry, VisaType
 from common.utilities import guard_demo_write
 
@@ -78,52 +80,52 @@ REQUIREMENTS_EN = {
     ],
 }
 
-# name_ar, name_en, iso2, [(name_ar, name_en, purpose, price, days, validity)]
+# name_ar, name_en, iso2, [(name_ar, name_en, purpose, price, days, validity, entry)]
 # One record per row. `ruff format` gives every field its own line and turns a
 # readable table into column soup; the project lints with `ruff check`.
 # fmt: off
 COUNTRIES = [
     ("تركيا", "Türkiye", "tr", [
-        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "350.00", 5, 180),
-        ("تأشيرة عمل", "Business visa", "BUSINESS", "520.00", 7, 180),
+        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "350.00", 5, 180, "MULTIPLE"),
+        ("تأشيرة عمل", "Business visa", "BUSINESS", "520.00", 7, 180, "MULTIPLE"),
     ]),
     ("المملكة المتحدة", "United Kingdom", "gb", [
-        ("تأشيرة زيارة", "Visitor visa", "TOURISM", "1450.00", 20, 180),
-        ("تأشيرة دراسية", "Student visa", "STUDY", "780.00", 15, 365),
-        ("تأشيرة عمل", "Business visa", "BUSINESS", "1450.00", 20, 180),
+        ("تأشيرة زيارة", "Visitor visa", "TOURISM", "1450.00", 20, 180, "MULTIPLE"),
+        ("تأشيرة دراسية", "Student visa", "STUDY", "780.00", 15, 365, "MULTIPLE"),
+        ("تأشيرة عمل", "Business visa", "BUSINESS", "1450.00", 20, 180, "MULTIPLE"),
     ]),
     ("فرنسا", "France", "fr", [
-        ("تأشيرة شنغن السياحية", "Schengen tourist visa", "TOURISM", "980.00", 15, 90),
-        ("تأشيرة عمل", "Business visa", "BUSINESS", "450.00", 10, 90),
+        ("تأشيرة شنغن السياحية", "Schengen tourist visa", "TOURISM", "980.00", 15, 90, "SINGLE"),
+        ("تأشيرة عمل", "Business visa", "BUSINESS", "450.00", 10, 90, "MULTIPLE"),
     ]),
     ("الولايات المتحدة", "United States", "us", [
-        ("تأشيرة زيارة B1/B2", "B1/B2 visitor visa", "TOURISM", "1900.00", 30, 3650),
-        ("تأشيرة دراسية F1", "F1 student visa", "STUDY", "2100.00", 30, 1825),
+        ("تأشيرة زيارة B1/B2", "B1/B2 visitor visa", "TOURISM", "1900.00", 30, 3650, "MULTIPLE"),
+        ("تأشيرة دراسية F1", "F1 student visa", "STUDY", "2100.00", 30, 1825, "MULTIPLE"),
     ]),
     ("اليابان", "Japan", "jp", [
-        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "640.00", 8, 90),
+        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "640.00", 8, 90, "SINGLE"),
     ]),
     ("ماليزيا", "Malaysia", "my", [
-        ("تصريح دخول إلكتروني", "Electronic travel registration", "TOURISM", "180.00", 3, 90),
+        ("تصريح دخول إلكتروني", "Electronic travel registration", "TOURISM", "180.00", 3, 90, "SINGLE"),
     ]),
     ("تايلاند", "Thailand", "th", [
-        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "290.00", 5, 60),
+        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "290.00", 5, 60, "SINGLE"),
     ]),
     ("أذربيجان", "Azerbaijan", "az", [
-        ("تأشيرة إلكترونية", "E-visa", "TOURISM", "220.00", 3, 90),
+        ("تأشيرة إلكترونية", "E-visa", "TOURISM", "220.00", 3, 90, "SINGLE"),
     ]),
     ("جورجيا", "Georgia", "ge", [
-        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "260.00", 7, 90),
+        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "260.00", 7, 90, "SINGLE"),
     ]),
     ("الهند", "India", "in", [
-        ("تأشيرة إلكترونية سياحية", "Tourist e-visa", "TOURISM", "310.00", 5, 365),
-        ("تأشيرة عمل", "Business visa", "BUSINESS", "540.00", 8, 365),
+        ("تأشيرة إلكترونية سياحية", "Tourist e-visa", "TOURISM", "310.00", 5, 365, "MULTIPLE"),
+        ("تأشيرة عمل", "Business visa", "BUSINESS", "540.00", 8, 365, "MULTIPLE"),
     ]),
     ("إندونيسيا", "Indonesia", "id", [
-        ("تأشيرة عند الوصول", "Visa on arrival", "TOURISM", "200.00", 2, 30),
+        ("تأشيرة عند الوصول", "Visa on arrival", "TOURISM", "200.00", 2, 30, "SINGLE"),
     ]),
     ("البوسنة والهرسك", "Bosnia and Herzegovina", "ba", [
-        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "340.00", 10, 90),
+        ("تأشيرة سياحية", "Tourist visa", "TOURISM", "340.00", 10, 90, "SINGLE"),
     ]),
 ]
 # fmt: on
@@ -144,25 +146,42 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         guard_demo_write(options["force"])
 
+        # name -> cover, for every country the catalogue already illustrates.
+        destination_covers = {}
+        for destination in Destination.objects.exclude(cover_image=""):
+            if destination.cover_image:
+                destination_covers.setdefault(
+                    destination.country_en.strip().lower(), destination.cover_image
+                )
+
         countries = types = 0
         for name_ar, name_en, iso2, visa_types in COUNTRIES:
+            defaults = {
+                "name_ar": name_ar,
+                "flag_image": FLAG.format(iso2),
+                "is_active": True,
+            }
+            # Borrowed from a destination in the same country, and only where
+            # one exists — those photographs were checked by eye when they were
+            # chosen, so this cannot file a picture of the wrong place. An
+            # editor's own upload always wins: see the loop below the run.
+            borrowed = destination_covers.get(name_en.strip().lower())
+            if borrowed:
+                defaults["cover_image"] = borrowed
+
             country, _ = VisaCountry.objects.update_or_create(
-                name_en=name_en,
-                defaults={
-                    "name_ar": name_ar,
-                    "flag_image": FLAG.format(iso2),
-                    "is_active": True,
-                },
+                name_en=name_en, defaults=defaults
             )
             countries += 1
 
-            for type_ar, type_en, purpose, price, days, validity in visa_types:
+            for type_ar, type_en, purpose, price, days, validity, entry in visa_types:
                 VisaType.objects.update_or_create(
                     country=country,
                     name_en=type_en,
                     defaults={
                         "name_ar": type_ar,
                         "purpose": purpose,
+                        "entry_type": entry,
                         "requirements_ar": "\n".join(REQUIREMENTS_AR[purpose]),
                         "requirements_en": "\n".join(REQUIREMENTS_EN[purpose]),
                         "price": Decimal(price),
@@ -195,3 +214,22 @@ class Command(BaseCommand):
                 ).delete()
 
         self.stdout.write(self.style.SUCCESS(f"Visas: {countries} countries, {types} types."))
+
+        # The visa cards lead with this picture, so say plainly which countries
+        # are still showing the brand block instead of one.
+        unillustrated = list(
+            # Q, not `__in=["", None]`: SQL's IN never matches NULL, so that
+            # form silently reports every country as illustrated.
+            VisaCountry.objects.filter(
+                Q(cover_image="") | Q(cover_image__isnull=True)
+            ).values_list("name_en", flat=True)
+        )
+        if unillustrated:
+            self.stdout.write(
+                self.style.WARNING(
+                    "No photo yet for: "
+                    + ", ".join(unillustrated)
+                    + ". Upload one per country in the panel — the visa cards "
+                    "show a plain brand block until then."
+                )
+            )

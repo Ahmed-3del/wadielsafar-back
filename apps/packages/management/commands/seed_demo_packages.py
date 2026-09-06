@@ -23,6 +23,9 @@ CATEGORIES = {
     "honeymoon": ("شهر عسل", "Honeymoon"),
     "cultural": ("ثقافية", "Cultural"),
     "adventure": ("مغامرات", "Adventure"),
+    # The trip-type filter asks "what kind of trip", and for a Saudi agency
+    # Umrah and Hajj are their own answer rather than a kind of culture.
+    "religious": ("عمرة ودينية", "Umrah & Religious"),
 }
 
 UNSPLASH = "https://images.unsplash.com/photo-{}?w=1600&q=80"
@@ -490,7 +493,7 @@ PACKAGES = [
         "title_ar": "باقة العمرة المريحة",
         "title_en": "Umrah Comfort Package",
         "destination": "makkah",
-        "category": "cultural",
+        "category": "religious",
         "duration_days": 4,
         "price_from": Decimal("2800.00"),
         "cover_image": MAKKAH_IMAGE,

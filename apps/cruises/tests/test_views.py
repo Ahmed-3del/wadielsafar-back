@@ -1,7 +1,11 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.cruises.tests.factories import CruiseFactory, CruiseItineraryFactory
+from apps.cruises.tests.factories import (
+    CruiseFactory,
+    CruiseItineraryFactory,
+    CruisePortFactory,
+)
 from apps.users.tests.factories import UserFactory
 from common.constants import RoleChoices
 
@@ -76,3 +80,66 @@ def test_depart_after_filters_by_sail_date(tmp_path):
     assert response.status_code == 200
     dates = [row["departure_date"] for row in response.data["results"]]
     assert dates == ["2026-09-01"]
+
+
+# --------------------------------------------------------------- cruise ports
+
+
+def test_public_sees_only_active_ports():
+    CruisePortFactory(is_active=True)
+    CruisePortFactory(is_active=False)
+
+    assert APIClient().get("/api/v1/cruises/ports/").data["count"] == 1
+
+
+def test_ports_route_is_not_swallowed_by_the_cruise_detail_route():
+    """Both live under /cruises/. Registered the other way round, "ports" would
+    be read as a cruise slug and answer 404."""
+    response = APIClient().get("/api/v1/cruises/ports/")
+
+    assert response.status_code == 200
+
+
+def test_port_search_matches_an_unpointed_arabic_spelling():
+    """Someone hunting for إسطنبول types "اسطنبول"; matching the stored spelling
+    literally would find nothing on an Arabic-first site."""
+    CruisePortFactory(city_ar="إسطنبول", city_en="Istanbul", name_ar="ميناء غلطة")
+
+    response = APIClient().get("/api/v1/cruises/ports/", {"search": "اسطنبول"})
+
+    assert response.data["count"] == 1
+
+
+def test_filter_cruises_by_departure_country():
+    """The homepage asks for a country first, and that answer alone has to
+    filter — the port is the second, optional half."""
+    emirati = CruisePortFactory(country_code="AE")
+    italian = CruisePortFactory(country_code="IT", country_en="Italy", country_ar="إيطاليا")
+    CruiseFactory(departure_port=emirati)
+    CruiseFactory(departure_port=italian)
+
+    response = APIClient().get("/api/v1/cruises/", {"country": "AE"})
+
+    assert response.data["count"] == 1
+    assert response.data["results"][0]["departure_port"]["country_code"] == "AE"
+
+
+def test_filter_cruises_by_port():
+    rashid = CruisePortFactory(code="dubai-port-rashid", country_code="AE")
+    zayed = CruisePortFactory(code="abu-dhabi-zayed", country_code="AE")
+    CruiseFactory(departure_port=rashid)
+    CruiseFactory(departure_port=zayed)
+
+    response = APIClient().get("/api/v1/cruises/", {"country": "AE", "port": "dubai-port-rashid"})
+
+    assert response.data["count"] == 1
+    assert response.data["results"][0]["departure_port"]["code"] == "dubai-port-rashid"
+
+
+def test_a_cruise_with_no_port_survives_the_country_filter():
+    """An unlinked sailing is invisible to the country search rather than an
+    error — the port link is optional, and the cruise still publishes."""
+    CruiseFactory(departure_port=None)
+
+    assert APIClient().get("/api/v1/cruises/", {"country": "AE"}).data["count"] == 0
+    assert APIClient().get("/api/v1/cruises/").data["count"] == 1

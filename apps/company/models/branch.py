@@ -13,8 +13,16 @@ class Branch(TimeStampedModel):
     # A dialable number has no spaces and a readable one does, and they are not
     # the same string. Left blank, the frontend prints the dialable form.
     phone_display = models.CharField(max_length=30, blank=True)
+    # One line, in reading order: neighbourhood, street, city.
     address_ar = models.CharField(max_length=255, blank=True)
     address_en = models.CharField(max_length=255, blank=True)
+    # Drives the mini map and the "view on map" link. Blank hides the map and
+    # leaves the address as text, which is better than a pin in the sea.
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    # The head office, called out with a border and a badge. Exactly one is
+    # expected; nothing breaks if there are none.
+    is_main = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
