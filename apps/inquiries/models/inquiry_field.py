@@ -6,13 +6,25 @@ from common.utilities import TimeStampedModel
 
 
 class InquiryFieldTypeChoices(models.TextChoices):
-    """What the website renders for this question."""
+    """What the website renders for this question.
+
+    The first five are plain inputs any form can draw. The rest are the richer
+    controls the service pages use — a count is faster to set with two buttons
+    than a dropdown, and an airport has to be searched rather than typed. The
+    contact form falls back to the nearest plain input for those, so a question
+    is never unanswerable.
+    """
 
     TEXT = "TEXT", "Short text"
     TEXTAREA = "TEXTAREA", "Long text"
     NUMBER = "NUMBER", "Number"
     DATE = "DATE", "Date"
     SELECT = "SELECT", "Choice from a list"
+    STEPPER = "STEPPER", "Count with − and + buttons"
+    SEGMENTED = "SEGMENTED", "Choice laid out as buttons"
+    CHECKBOX = "CHECKBOX", "Several choices at once"
+    AIRPORT = "AIRPORT", "Airport search (keeps the code)"
+    CITY = "CITY", "City search"
 
 
 def split_options(text: str) -> list[str]:
@@ -50,6 +62,30 @@ class InquiryField(TimeStampedModel):
     options_ar = models.TextField(blank=True)
     options_en = models.TextField(blank=True)
     is_required = models.BooleanField(default=False)
+
+    # --- how the richer controls behave --------------------------------------
+    # Bounds for a count. Ignored by every other type.
+    min_value = models.PositiveIntegerField(null=True, blank=True)
+    max_value = models.PositiveIntegerField(null=True, blank=True)
+    # Dates only. A trip that starts yesterday is a typo, and it reaches an
+    # agent as a booking nobody can fulfil.
+    not_past = models.BooleanField(default=False)
+    # Dates only: another question's key, which this one cannot precede. A
+    # return before its departure is the case this exists for.
+    not_before = models.SlugField(max_length=40, blank=True)
+    # Show this question only when another one holds a particular answer —
+    # the return date on a round trip, and not on a one-way. Matched against
+    # the *English* option, so one rule covers both languages: the answer a
+    # visitor picks is stored in their own language.
+    show_when_key = models.SlugField(max_length=40, blank=True)
+    show_when_value = models.CharField(max_length=60, blank=True)
+    # Full width on the two-column layout, for a long answer.
+    is_wide = models.BooleanField(default=False)
+    # Consecutive questions sharing a heading become one titled block. Blank
+    # leaves the question ungrouped, which is what short forms want.
+    group_ar = models.CharField(max_length=80, blank=True)
+    group_en = models.CharField(max_length=80, blank=True)
+
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
@@ -71,7 +107,17 @@ class InquiryField(TimeStampedModel):
         They are zipped by position when the website renders them, so a missing
         line in one language would put an Arabic label on an English answer.
         """
-        if self.field_type != InquiryFieldTypeChoices.SELECT:
+        if self.not_before and self.not_before == self.key:
+            raise ValidationError({"not_before": "A date cannot be bounded by itself."})
+        if self.show_when_key and self.show_when_key == self.key:
+            raise ValidationError({"show_when_key": "A question cannot depend on itself."})
+
+        # Options belong to the types that show a list.
+        if self.field_type not in {
+            InquiryFieldTypeChoices.SELECT,
+            InquiryFieldTypeChoices.SEGMENTED,
+            InquiryFieldTypeChoices.CHECKBOX,
+        }:
             return
 
         arabic = split_options(self.options_ar)

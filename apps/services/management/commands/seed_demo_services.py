@@ -15,38 +15,42 @@ from django.db import transaction
 from apps.services.models import Service
 from common.utilities import guard_demo_write
 
-# slug, name_ar, name_en, icon key, description_ar, description_en
 # fmt: off
-# slug, name_ar, name_en, icon, description_ar, description_en, link
+# slug, name_ar, name_en, icon, description_ar, description_en, link, service_type
 #
 # The link is where the tile leads. Blank means the contact form, which is the
 # honest answer for an add-on an agent arranges by hand; the two that have a
 # page of their own point at it.
+#
+# The service type is what the form lands on when the tile leads there. Most of
+# these are add-ons rather than one of the six services an enquiry is filed
+# under, so OTHER is the truthful answer — the tile's own name travels with the
+# link and is filed alongside it, which is what tells the agent which add-on.
 SERVICES = [
     ("car-rental", "تأجير السيارات", "Car Rental", "car",
      "سيارة في انتظارك عند الوصول، بتأمين وسائق اختياري.",
-     "A car waiting when you land, with insurance and an optional driver.", ""),
+     "A car waiting when you land, with insurance and an optional driver.", "", "OTHER"),
     ("airport-transfers", "تنقلات المطار", "Airport Transfers", "transfer",
      "استقبال وتوصيل بين المطار والفندق بسائق يعرف الطريق.",
-     "Pick-up and drop-off between airport and hotel with a driver who knows the way.", ""),
+     "Pick-up and drop-off between airport and hotel with a driver who knows the way.", "", "OTHER"),
     ("international-licence", "الرخصة الدولية", "International Licence", "licence",
      "إصدار رخصة القيادة الدولية قبل السفر، دون مراجعة أي جهة.",
-     "An international driving permit issued before you travel, with no office to visit.", ""),
+     "An international driving permit issued before you travel, with no office to visit.", "", "OTHER"),
     ("travel-insurance", "تأمين السفر", "Travel Insurance", "shield",
      "تغطية طبية وإلغاء الرحلة، ومطلوبة لتأشيرة شنغن.",
-     "Medical and cancellation cover — and required for a Schengen visa.", ""),
+     "Medical and cancellation cover — and required for a Schengen visa.", "", "OTHER"),
     ("internet-packages", "باقات الاتصال والإنترنت", "Internet Packages", "sim",
      "شريحة أو باقة إنترنت تعمل من لحظة هبوط الطائرة.",
-     "A SIM or data plan that works from the moment you land.", ""),
+     "A SIM or data plan that works from the moment you land.", "", "OTHER"),
     ("activities-tours", "حجز الأنشطة والجولات", "Activities & Tours", "ticket",
      "تذاكر ومعالم وجولات محجوزة مسبقًا، بلا طوابير.",
-     "Tickets, attractions and guided tours booked ahead, with no queues.", "/packages"),
+     "Tickets, attractions and guided tours booked ahead, with no queues.", "/packages", "PACKAGE"),
     ("instant-visa", "تأشيرة فورية", "Instant Visa", "passport",
      "التأشيرات الإلكترونية التي تصدر خلال ساعات لا أيام.",
-     "The e-visas that come back in hours rather than days.", "/visas"),
+     "The e-visas that come back in hours rather than days.", "/visas", "VISA"),
     ("travel-consultation", "استشارة سفر مجانية", "Free Travel Consultation", "headset",
      "تكلّم مع موظف حجوزات قبل أن تدفع أي شيء.",
-     "Talk to a booking agent before you pay for anything.", ""),
+     "Talk to a booking agent before you pay for anything.", "", "OTHER"),
 ]
 # fmt: on
 
@@ -67,7 +71,7 @@ class Command(BaseCommand):
         guard_demo_write(options["force"])
 
         for order, row in enumerate(SERVICES):
-            slug, name_ar, name_en, icon, desc_ar, desc_en, link = row
+            slug, name_ar, name_en, icon, desc_ar, desc_en, link, service_type = row
             Service.objects.update_or_create(
                 slug=slug,
                 defaults={
@@ -77,6 +81,7 @@ class Command(BaseCommand):
                     "description_ar": desc_ar,
                     "description_en": desc_en,
                     "link": link,
+                    "service_type": service_type,
                     "order": order,
                     "is_active": True,
                 },

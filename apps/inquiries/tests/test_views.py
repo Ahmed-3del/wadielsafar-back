@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from rest_framework.test import APIClient
 
-from apps.inquiries.models import InquiryField
+from apps.inquiries.models import InquiryField, InquiryServiceType
 from apps.inquiries.tests.factories import InquiryFactory
 from apps.users.tests.factories import UserFactory
 from common.constants import InquiryStatusChoices, RoleChoices
@@ -151,3 +151,148 @@ def test_two_services_can_ask_the_same_question():
     )
 
     assert InquiryField.objects.count() == 2
+
+
+def test_a_date_cannot_be_bounded_by_itself():
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service_type": "FLIGHT",
+            "key": "depart",
+            "label_ar": "المغادرة",
+            "label_en": "Departure",
+            "field_type": "DATE",
+            "not_before": "depart",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_a_stepper_keeps_its_bounds_through_the_api():
+    """The − and + buttons stop at these, so they have to survive the round
+    trip exactly as an editor set them."""
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service_type": "HOTEL",
+            "key": "rooms",
+            "label_ar": "الغرف",
+            "label_en": "Rooms",
+            "field_type": "STEPPER",
+            "min_value": 1,
+            "max_value": 6,
+        },
+    )
+
+    assert response.status_code == 201, response.data
+    assert (response.data["min_value"], response.data["max_value"]) == (1, 6)
+
+
+def test_a_conditional_question_carries_its_rule():
+    """"Ask for a return date only on a round trip" is a row, not code."""
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service_type": "FLIGHT",
+            "key": "return",
+            "label_ar": "العودة",
+            "label_en": "Return",
+            "field_type": "DATE",
+            "show_when_key": "trip_type",
+            "show_when_value": "Round trip",
+        },
+    )
+
+    assert response.status_code == 201, response.data
+    assert response.data["show_when_key"] == "trip_type"
+    assert response.data["show_when_value"] == "Round trip"
+
+
+def test_a_segmented_question_needs_its_options_in_both_languages():
+    """Segmented and checkbox lists are zipped by position the same way a
+    dropdown is, so they are held to the same rule."""
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service_type": "FLIGHT",
+            "key": "trip_type",
+            "label_ar": "نوع الرحلة",
+            "label_en": "Trip type",
+            "field_type": "SEGMENTED",
+            "options_ar": "ذهاب وعودة\nذهاب فقط",
+            "options_en": "Round trip",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_the_contact_form_reads_its_service_list_without_signing_in():
+    """The list is what the public form draws its dropdown from, so it has to
+    be readable by an anonymous visitor."""
+    InquiryServiceType.objects.create(value="FLIGHT", label_ar="طيران", label_en="Flight", order=0)
+
+    response = APIClient().get("/api/v1/inquiries/service-types/")
+
+    assert response.status_code == 200
+    assert [row["value"] for row in response.data["results"]] == ["FLIGHT"]
+
+
+def test_a_service_switched_off_leaves_the_form_but_stays_in_the_panel():
+    InquiryServiceType.objects.create(value="FLIGHT", label_ar="طيران", label_en="Flight")
+    InquiryServiceType.objects.create(
+        value="CRUISE", label_ar="رحلة بحرية", label_en="Cruise", is_active=False
+    )
+
+    public = APIClient().get("/api/v1/inquiries/service-types/")
+    assert [row["value"] for row in public.data["results"]] == ["FLIGHT"]
+
+    editor = APIClient()
+    editor.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+    assert editor.get("/api/v1/inquiries/service-types/").data["count"] == 2
+
+
+def test_the_service_list_comes_back_in_the_order_the_panel_set():
+    InquiryServiceType.objects.create(value="VISA", label_ar="تأشيرة", label_en="Visa", order=2)
+    InquiryServiceType.objects.create(value="FLIGHT", label_ar="طيران", label_en="Flight", order=1)
+
+    response = APIClient().get("/api/v1/inquiries/service-types/")
+
+    assert [row["value"] for row in response.data["results"]] == ["FLIGHT", "VISA"]
+
+
+def test_a_service_outside_the_enquiry_column_is_refused():
+    """Every entry files enquiries under its value, so a made-up one would file
+    them somewhere the panel cannot read back."""
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/service-types/",
+        {"value": "SAFARI", "label_ar": "سفاري", "label_en": "Safari"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_the_public_cannot_edit_the_service_list():
+    row = InquiryServiceType.objects.create(value="FLIGHT", label_ar="طيران", label_en="Flight")
+
+    response = APIClient().patch(
+        f"/api/v1/inquiries/service-types/{row.id}/", {"label_en": "Cheap flights"}
+    )
+
+    assert response.status_code == 401

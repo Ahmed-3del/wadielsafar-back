@@ -43,11 +43,17 @@ SEEDERS = [
     # departure and arrival pickers to have anything in them.
     "seed_airports",
     "seed_inquiry_fields",
+    "seed_inquiry_service_types",
 ]
 
-# These two carry no --force flag: they are reference data rather than content,
+# These carry no --force flag: they are reference data rather than content,
 # so there is nothing of the client's for them to overwrite.
-REFERENCE_SEEDERS = {"seed_airports", "seed_cruise_ports", "seed_inquiry_fields"}
+REFERENCE_SEEDERS = {
+    "seed_airports",
+    "seed_cruise_ports",
+    "seed_inquiry_fields",
+    "seed_inquiry_service_types",
+}
 
 
 class Command(BaseCommand):

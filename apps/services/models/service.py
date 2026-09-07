@@ -1,5 +1,6 @@
 from django.db import models
 
+from common.constants import ServiceTypeChoices
 from common.utilities import TimeStampedModel, generate_unique_slug
 from common.validators import validate_internal_path
 
@@ -54,6 +55,13 @@ class Service(TimeStampedModel):
     # is the right answer for most of these — but an "Instant visa" tile
     # belongs on /visas, and that was not something an editor could say.
     link = models.CharField(max_length=200, blank=True, validators=[validate_internal_path])
+    # Which entry of the contact form's list this tile is. A tile with no page
+    # of its own leads to the form, and this is what arrives there already
+    # chosen — so a reader who pressed "Travel insurance" is not asked again
+    # what they came for. Blank leaves the form on its own default.
+    service_type = models.CharField(
+        max_length=20, choices=ServiceTypeChoices.choices, blank=True
+    )
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 

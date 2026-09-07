@@ -4,5 +4,12 @@ from apps.inquiries.models.inquiry_field import (
     InquiryFieldTypeChoices,
     split_options,
 )
+from apps.inquiries.models.service_type import InquiryServiceType
 
-__all__ = ["Inquiry", "InquiryField", "InquiryFieldTypeChoices", "split_options"]
+__all__ = [
+    "Inquiry",
+    "InquiryField",
+    "InquiryFieldTypeChoices",
+    "InquiryServiceType",
+    "split_options",
+]
