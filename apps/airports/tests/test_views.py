@@ -201,3 +201,52 @@ def test_the_shipped_catalogue_is_searchable_in_loose_arabic():
     response = APIClient().get("/api/v1/airports/?search=اسطنبول")
 
     assert codes(response)[0] == "IST"
+
+
+def test_an_accent_nobody_types_still_finds_the_airport(clean_airports):
+    """The catalogue says Málaga; the search box gets "malaga"."""
+    AirportFactory(iata_code="AGP", city_en="Málaga", city_ar="مالقة")
+
+    assert codes(APIClient().get("/api/v1/airports/?search=malaga")) == ["AGP"]
+
+
+def test_the_turkish_dotted_i_matches_a_plain_one(clean_airports):
+    """İzmir lower-cases to "i̇zmir" with a stray combining dot, so a plain
+    icontains missed it however the traveller typed it."""
+    AirportFactory(iata_code="ADB", city_en="İzmir", city_ar="إزمير")
+
+    assert codes(APIClient().get("/api/v1/airports/?search=izmir")) == ["ADB"]
+
+
+def test_folded_latin_reaches_the_airport_name_and_country_too(clean_airports):
+    AirportFactory(
+        iata_code="ASU",
+        city_en="Somewhere",
+        name_en="Silvio Pettirossi Airport",
+        country_en="Paraguay",
+    )
+
+    assert codes(APIClient().get("/api/v1/airports/?search=pettirossi")) == ["ASU"]
+
+
+def test_saving_refreshes_the_folded_latin_columns(clean_airports):
+    airport = AirportFactory(iata_code="ZZZ", city_en="Zurich")
+    airport.city_en = "Zürich"
+    airport.save()
+
+    assert codes(APIClient().get("/api/v1/airports/?search=zurich")) == ["ZZZ"]
+
+
+def test_the_shipped_catalogue_is_searchable_without_accents():
+    """The seeder fills the folded columns; without it these are unreachable."""
+    assert codes(APIClient().get("/api/v1/airports/?search=reykjavik"))
+    assert codes(APIClient().get("/api/v1/airports/?search=malaga"))
+
+
+def test_the_catalogue_covers_the_world_not_just_the_places_already_flown():
+    """It shipped with 259 airports across 94 countries, which meant a picker
+    that could not offer Kathmandu or Reykjavik at all."""
+    from apps.airports.data.catalogue import AIRPORTS
+
+    assert len(AIRPORTS) > 3500
+    assert len({row[7] for row in AIRPORTS}) > 200

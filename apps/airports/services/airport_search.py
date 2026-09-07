@@ -1,6 +1,6 @@
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
-from common.utilities import normalize_arabic
+from common.utilities import normalize_arabic, normalize_latin
 
 
 class AirportSearchService:
@@ -10,7 +10,9 @@ class AirportSearchService:
     Dammam first, not every airport whose name happens to contain those
     letters — so matches are scored and the score drives the ordering. And
     someone typing "اسطنبول" means إسطنبول — so the Arabic side matches against
-    the folded columns the model maintains, not the stored spelling.
+    the folded columns the model maintains, not the stored spelling. The Latin
+    side is folded for the same reason: the catalogue says Málaga and İzmir,
+    and nobody types the accents.
     """
 
     # Lower sorts first.
@@ -25,27 +27,29 @@ class AirportSearchService:
         if not term:
             return queryset
 
-        # English needs no folding: icontains already case-folds it.
-        folded = normalize_arabic(term)
+        arabic = normalize_arabic(term)
+        latin = normalize_latin(term)
 
         matches = (
             Q(iata_code__icontains=term)
-            | Q(city_en__icontains=term)
-            | Q(name_en__icontains=term)
-            | Q(country_en__icontains=term)
-            | Q(city_ar_folded__icontains=folded)
-            | Q(text_ar_folded__icontains=folded)
+            | Q(city_en_folded__icontains=latin)
+            | Q(text_en_folded__icontains=latin)
+            | Q(city_ar_folded__icontains=arabic)
+            | Q(text_ar_folded__icontains=arabic)
         )
 
         rank = Case(
             When(iata_code__iexact=term, then=Value(AirportSearchService.RANK_CODE)),
-            When(city_en__istartswith=term, then=Value(AirportSearchService.RANK_CITY_PREFIX)),
             When(
-                city_ar_folded__istartswith=folded,
+                city_en_folded__istartswith=latin,
                 then=Value(AirportSearchService.RANK_CITY_PREFIX),
             ),
-            When(city_en__icontains=term, then=Value(AirportSearchService.RANK_CITY)),
-            When(city_ar_folded__icontains=folded, then=Value(AirportSearchService.RANK_CITY)),
+            When(
+                city_ar_folded__istartswith=arabic,
+                then=Value(AirportSearchService.RANK_CITY_PREFIX),
+            ),
+            When(city_en_folded__icontains=latin, then=Value(AirportSearchService.RANK_CITY)),
+            When(city_ar_folded__icontains=arabic, then=Value(AirportSearchService.RANK_CITY)),
             default=Value(AirportSearchService.RANK_OTHER),
             output_field=IntegerField(),
         )

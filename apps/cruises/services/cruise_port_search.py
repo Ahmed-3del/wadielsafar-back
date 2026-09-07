@@ -1,6 +1,6 @@
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
-from common.utilities import normalize_arabic
+from common.utilities import normalize_arabic, normalize_latin
 
 
 class CruisePortSearchService:
@@ -10,7 +10,8 @@ class CruisePortSearchService:
     Port Rashid first, not every port whose blurb mentions Dubai — so matches
     are scored and the score drives the order. And someone typing "اسطنبول"
     means إسطنبول, so the Arabic side matches the folded columns the model
-    maintains rather than the stored spelling.
+    maintains rather than the stored spelling. The Latin side is folded for the
+    same reason — the catalogue says Kuşadası, and nobody types the ş.
     """
 
     RANK_CITY_PREFIX = 0
@@ -23,25 +24,27 @@ class CruisePortSearchService:
         if not term:
             return queryset
 
-        # English needs no folding: icontains already case-folds it.
-        folded = normalize_arabic(term)
+        arabic = normalize_arabic(term)
+        latin = normalize_latin(term)
 
         matches = (
-            Q(city_en__icontains=term)
-            | Q(name_en__icontains=term)
-            | Q(country_en__icontains=term)
-            | Q(city_ar_folded__icontains=folded)
-            | Q(text_ar_folded__icontains=folded)
+            Q(city_en_folded__icontains=latin)
+            | Q(text_en_folded__icontains=latin)
+            | Q(city_ar_folded__icontains=arabic)
+            | Q(text_ar_folded__icontains=arabic)
         )
 
         rank = Case(
-            When(city_en__istartswith=term, then=Value(CruisePortSearchService.RANK_CITY_PREFIX)),
             When(
-                city_ar_folded__istartswith=folded,
+                city_en_folded__istartswith=latin,
                 then=Value(CruisePortSearchService.RANK_CITY_PREFIX),
             ),
-            When(city_en__icontains=term, then=Value(CruisePortSearchService.RANK_CITY)),
-            When(city_ar_folded__icontains=folded, then=Value(CruisePortSearchService.RANK_CITY)),
+            When(
+                city_ar_folded__istartswith=arabic,
+                then=Value(CruisePortSearchService.RANK_CITY_PREFIX),
+            ),
+            When(city_en_folded__icontains=latin, then=Value(CruisePortSearchService.RANK_CITY)),
+            When(city_ar_folded__icontains=arabic, then=Value(CruisePortSearchService.RANK_CITY)),
             default=Value(CruisePortSearchService.RANK_OTHER),
             output_field=IntegerField(),
         )

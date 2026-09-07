@@ -6,6 +6,7 @@ from apps.cruises.permissions import CruisePermission
 from apps.cruises.serializers import CruisePortSerializer
 from apps.cruises.services import CruisePortSearchService
 from common.constants import STAFF_CONTENT_ROLES
+from common.pagination import ReferenceDataPagination
 
 
 class CruisePortViewSet(viewsets.ModelViewSet):
@@ -13,6 +14,9 @@ class CruisePortViewSet(viewsets.ModelViewSet):
     permission_classes = (CruisePermission,)
     filterset_class = CruisePortFilter
     ordering_fields = ("city_en", "country_en", "order")
+    # The picker asks for the whole catalogue in one request and builds its
+    # country list out of it, so a page cap would quietly hide countries.
+    pagination_class = ReferenceDataPagination
 
     def get_queryset(self):
         queryset = CruisePort.objects.all()

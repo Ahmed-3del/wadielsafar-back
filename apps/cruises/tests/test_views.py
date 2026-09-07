@@ -143,3 +143,32 @@ def test_a_cruise_with_no_port_survives_the_country_filter():
 
     assert APIClient().get("/api/v1/cruises/", {"country": "AE"}).data["count"] == 0
     assert APIClient().get("/api/v1/cruises/").data["count"] == 1
+
+
+def test_the_port_picker_can_load_more_than_the_default_page_cap():
+    """The cruise search builds its country list out of the ports it was sent,
+    so the hundred-row cap did not shorten a list — it hid countries."""
+    for index in range(120):
+        CruisePortFactory(code=f"port-{index}")
+
+    response = APIClient().get("/api/v1/cruises/ports/?page_size=500")
+
+    assert response.status_code == 200
+    assert len(response.data["results"]) == 120
+
+
+def test_the_port_catalogue_reaches_past_the_places_already_sailed():
+    """It shipped with 105 ports across 54 countries, so most of the Caribbean,
+    Alaska and the Baltic could not be chosen at all."""
+    from apps.cruises.data.catalogue import PORTS
+
+    assert len(PORTS) > 250
+    assert len({row[7] for row in PORTS}) > 90
+
+
+def test_an_accent_nobody_types_still_finds_the_port():
+    CruisePortFactory(code="kusadasi", city_en="Kuşadası", city_ar="كوش أداسي")
+
+    response = APIClient().get("/api/v1/cruises/ports/?search=kusadasi")
+
+    assert [row["code"] for row in response.data["results"]] == ["kusadasi"]

@@ -88,6 +88,28 @@ ruff check .
 black --check .
 ```
 
+## The shipped catalogues
+
+Airports and cruise ports are reference data, kept as CSV beside the app that
+owns them and loaded by `seed_airports` / `seed_cruise_ports`:
+
+| File | Rows | Built by |
+| --- | --- | --- |
+| `apps/airports/data/airports.csv` | every airport with an IATA code and a timetable, ~4,000 across 233 countries | `python apps/airports/data/build_catalogue.py` |
+| `apps/cruises/data/ports.csv` | the ports cruises sail from, ~290 across 104 countries | `python apps/cruises/data/build_catalogue.py` |
+
+Both builders take their facts from sources — OurAirports, Wikidata, and CLDR
+for country names, which is where the panel's country picker gets them too —
+and neither will overwrite a name somebody checked by hand or delete a row that
+is in the catalogue but not in the source. The cruise-port list is the one that
+is curated rather than downloaded: no open dataset says which of the world's
+eleven thousand ports a cruise leaves from, so the candidates are written down
+in the script and every one of them is verified against Wikidata before it is
+written. Read the docstring at the top of either file before regenerating.
+
+Run them only when a catalogue needs refreshing; day to day the CSVs are the
+source of truth and the seeders are safe to re-run against a live database.
+
 ## Project layout
 
 See [../docs/architecture/backend.md](../docs/architecture/backend.md).

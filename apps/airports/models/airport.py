@@ -1,7 +1,7 @@
 from django.db import models
 
 from apps.flights.models.flight_deal import iata_code_validator
-from common.utilities import TimeStampedModel, normalize_arabic
+from common.utilities import TimeStampedModel, normalize_arabic, normalize_latin
 
 
 class Airport(TimeStampedModel):
@@ -41,6 +41,12 @@ class Airport(TimeStampedModel):
     city_ar_folded = models.CharField(max_length=120, blank=True, db_index=True)
     text_ar_folded = models.CharField(max_length=400, blank=True)
 
+    # And the same for the Latin side, which stopped being optional when the
+    # catalogue grew past the airports somebody had typed by hand: it now says
+    # Málaga, İzmir and Ålesund, and nobody searching types the accents.
+    city_en_folded = models.CharField(max_length=120, blank=True, db_index=True)
+    text_en_folded = models.CharField(max_length=400, blank=True)
+
     class Meta:
         ordering = ("-is_popular", "order", "city_en", "iata_code")
         indexes = [
@@ -56,4 +62,6 @@ class Airport(TimeStampedModel):
         self.country_code = self.country_code.upper()
         self.city_ar_folded = normalize_arabic(self.city_ar)
         self.text_ar_folded = normalize_arabic(f"{self.name_ar} {self.country_ar}")
+        self.city_en_folded = normalize_latin(self.city_en)
+        self.text_en_folded = normalize_latin(f"{self.name_en} {self.country_en}")
         super().save(*args, **kwargs)

@@ -1,6 +1,6 @@
 from django.db import models
 
-from common.utilities import TimeStampedModel, normalize_arabic
+from common.utilities import TimeStampedModel, normalize_arabic, normalize_latin
 
 
 class CruisePort(TimeStampedModel):
@@ -43,6 +43,11 @@ class CruisePort(TimeStampedModel):
     city_ar_folded = models.CharField(max_length=120, blank=True, db_index=True)
     text_ar_folded = models.CharField(max_length=400, blank=True)
 
+    # And the Latin side, for the same reason: the catalogue says Kuşadası,
+    # Ålesund and Valparaíso, and nobody searching types the accents.
+    city_en_folded = models.CharField(max_length=120, blank=True, db_index=True)
+    text_en_folded = models.CharField(max_length=400, blank=True)
+
     class Meta:
         ordering = ("-is_popular", "order", "country_en", "city_en")
         indexes = [
@@ -57,4 +62,6 @@ class CruisePort(TimeStampedModel):
         self.country_code = self.country_code.upper()
         self.city_ar_folded = normalize_arabic(self.city_ar)
         self.text_ar_folded = normalize_arabic(f"{self.name_ar} {self.country_ar}")
+        self.city_en_folded = normalize_latin(self.city_en)
+        self.text_en_folded = normalize_latin(f"{self.name_en} {self.country_en}")
         super().save(*args, **kwargs)
