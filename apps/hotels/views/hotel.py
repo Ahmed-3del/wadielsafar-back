@@ -2,15 +2,24 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.destinations.models import Destination
 from apps.hotels.filters.hotel_filter import HotelFilter
-from apps.hotels.models import Hotel
+from apps.hotels.models import Hotel, HotelAmenity
 from apps.hotels.permissions import HotelPermission
 from apps.hotels.serializers import HotelSerializer
 from apps.hotels.services import HotelService
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import HOTEL_COLUMNS
 
 
-class HotelViewSet(viewsets.ModelViewSet):
+class HotelViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = HOTEL_COLUMNS
+    import_key = "name_en"
+    import_lookups = {
+        "destination": (Destination, ("name_en", "slug"), False),
+        "amenities": (HotelAmenity, ("name_en", "name_ar"), True),
+    }
     serializer_class = HotelSerializer
     permission_classes = (HotelPermission,)
     filterset_class = HotelFilter

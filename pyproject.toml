@@ -18,7 +18,9 @@ known-first-party = ["apps", "common", "config"]
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.development"
 python_files = ["test_*.py"]
-testpaths = ["apps"]
+# `common` too, since the bulk import lives there and is tested through
+# the API like everything else.
+testpaths = ["apps", "common"]
 # All tests here are function-based (def test_...); disabling class collection
 # stops pytest from false-positive-matching imported names like
 # TestimonialFactory/TestimonialSerializer as test classes.

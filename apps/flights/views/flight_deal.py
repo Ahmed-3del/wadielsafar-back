@@ -8,9 +8,13 @@ from apps.flights.permissions import FlightPermission
 from apps.flights.serializers import FlightDealSerializer
 from apps.flights.services import FlightService
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import FLIGHT_COLUMNS
 
 
-class FlightDealViewSet(viewsets.ModelViewSet):
+class FlightDealViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = FLIGHT_COLUMNS
+    import_key = "title_en"
     serializer_class = FlightDealSerializer
     permission_classes = (FlightPermission,)
     filterset_class = FlightDealFilter

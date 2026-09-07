@@ -88,6 +88,31 @@ ruff check .
 black --check .
 ```
 
+## Bulk import from a spreadsheet
+
+Eleven resources take a filled-in .xlsx or .csv from the panel — airports,
+cruise ports, cruises, hotels, flights, visas, visa countries, destinations,
+packages, offers and services. Each gets two endpoints from
+[`common/imports`](common/imports/):
+
+```
+GET  /api/v1/<resource>/import-template/   the blank sheet, with a help sheet beside it
+POST /api/v1/<resource>/import/            send it back (`dry_run=true` to rehearse)
+```
+
+Rows validate through the resource's own serializer, so an import cannot write
+anything the panel's forms would have refused, and there is no second
+definition of a valid hotel. Three rules shape the rest:
+
+- **All or nothing.** A sheet is one act to whoever sent it; a half-applied one
+  is worse than a refusal that lists what to fix.
+- **Match, never delete.** A row whose key already exists is updated in place.
+- **References by name.** The sheet asks for a destination's name, not its id.
+
+Adding a resource is a `BulkImportMixin` on its viewset plus a column list in
+[`common/imports/columns.py`](common/imports/columns.py), where every `help`
+line is what an agent reads in the template.
+
 ## The shipped catalogues
 
 Airports and cruise ports are reference data, kept as CSV beside the app that

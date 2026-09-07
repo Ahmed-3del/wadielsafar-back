@@ -55,10 +55,15 @@ class Service(TimeStampedModel):
     # is the right answer for most of these — but an "Instant visa" tile
     # belongs on /visas, and that was not something an editor could say.
     link = models.CharField(max_length=200, blank=True, validators=[validate_internal_path])
-    # Which entry of the contact form's list this tile is. A tile with no page
-    # of its own leads to the form, and this is what arrives there already
-    # chosen — so a reader who pressed "Travel insurance" is not asked again
-    # what they came for. Blank leaves the form on its own default.
+    # Offered on the contact form as a choice of its own, so someone who came
+    # for travel insurance picks "Travel insurance" rather than "Other". Off by
+    # default: a tile that is really a shortcut to /visas does not need a
+    # second entry in a list that already offers Visa.
+    is_on_contact_form = models.BooleanField(default=False)
+    # Which bucket an enquiry for this service is filed under — the column the
+    # Inquiries screen filters by and the CRM reads. A service can be its own
+    # choice on the form and still be filed under OTHER; the two answer
+    # different questions. Blank leaves the form on its own default.
     service_type = models.CharField(
         max_length=20, choices=ServiceTypeChoices.choices, blank=True
     )

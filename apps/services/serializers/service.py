@@ -16,6 +16,7 @@ class ServiceSerializer(serializers.ModelSerializer):
             "icon",
             "link",
             "service_type",
+            "is_on_contact_form",
             "image",
             "order",
             "is_active",

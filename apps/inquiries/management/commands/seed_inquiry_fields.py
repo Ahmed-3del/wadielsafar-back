@@ -286,47 +286,245 @@ FIELDS = {
 }
 
 
+# The same thing again, but for one particular service rather than a whole
+# service type. These are the questions an agent needs that only that service
+# needs — a car rental cares about pick-up and drop-off, a travel insurance
+# enquiry about who is covered and for how long. Keyed on the service's slug;
+# a slug that is not in the database yet is skipped rather than guessed at.
+SERVICE_FIELDS = {
+    "car-rental": [
+        {
+            "key": "pickup_city",
+            "label_ar": "مدينة الاستلام",
+            "label_en": "Pick-up city",
+            "field_type": "CITY",
+            "is_required": True,
+        },
+        {
+            "key": "pickup_date",
+            "label_ar": "تاريخ الاستلام",
+            "label_en": "Pick-up date",
+            "field_type": "DATE",
+            "is_required": True,
+            "not_past": True,
+        },
+        {
+            "key": "return_date",
+            "label_ar": "تاريخ الإرجاع",
+            "label_en": "Return date",
+            "field_type": "DATE",
+            "not_past": True,
+            "not_before": "pickup_date",
+        },
+        {
+            "key": "car_size",
+            "label_ar": "فئة السيارة",
+            "label_en": "Car size",
+            "field_type": "SEGMENTED",
+            "options_ar": "أي فئة\nاقتصادية\nعائلية\nدفع رباعي\nفاخرة",
+            "options_en": "Any\nEconomy\nFamily\nSUV\nLuxury",
+        },
+        {
+            "key": "with_driver",
+            "label_ar": "مع سائق؟",
+            "label_en": "With a driver?",
+            "field_type": "SEGMENTED",
+            "options_ar": "بدون سائق\nمع سائق",
+            "options_en": "Self-drive\nWith a driver",
+        },
+    ],
+    "travel-insurance": [
+        {
+            "key": "destination_country",
+            "label_ar": "الدولة المقصودة",
+            "label_en": "Destination country",
+            "field_type": "CITY",
+            "is_required": True,
+        },
+        {
+            "key": "cover_start",
+            "label_ar": "بداية التغطية",
+            "label_en": "Cover starts",
+            "field_type": "DATE",
+            "is_required": True,
+            "not_past": True,
+        },
+        {
+            "key": "cover_end",
+            "label_ar": "نهاية التغطية",
+            "label_en": "Cover ends",
+            "field_type": "DATE",
+            "is_required": True,
+            "not_past": True,
+            "not_before": "cover_start",
+        },
+        {
+            "key": "travellers",
+            "label_ar": "عدد المشمولين",
+            "label_en": "People covered",
+            "field_type": "STEPPER",
+            "min_value": 1,
+            "max_value": 12,
+        },
+        {
+            "key": "oldest_age",
+            "label_ar": "عمر أكبر مسافر",
+            "label_en": "Age of the oldest traveller",
+            "field_type": "NUMBER",
+            "min_value": 0,
+            "max_value": 120,
+        },
+    ],
+    "airport-transfers": [
+        {
+            "key": "airport",
+            "label_ar": "المطار",
+            "label_en": "Airport",
+            "field_type": "AIRPORT",
+            "is_required": True,
+        },
+        {
+            "key": "hotel_or_address",
+            "label_ar": "الفندق أو العنوان",
+            "label_en": "Hotel or address",
+            "field_type": "TEXT",
+            "is_required": True,
+        },
+        {
+            "key": "arrival_date",
+            "label_ar": "تاريخ الوصول",
+            "label_en": "Arrival date",
+            "field_type": "DATE",
+            "not_past": True,
+        },
+        {
+            "key": "passengers",
+            "label_ar": "عدد الركاب",
+            "label_en": "Passengers",
+            "field_type": "STEPPER",
+            "min_value": 1,
+            "max_value": 15,
+        },
+    ],
+    "internet-packages": [
+        {
+            "key": "country",
+            "label_ar": "الدولة",
+            "label_en": "Country",
+            "field_type": "CITY",
+            "is_required": True,
+        },
+        {
+            "key": "days",
+            "label_ar": "عدد الأيام",
+            "label_en": "Days",
+            "field_type": "STEPPER",
+            "min_value": 1,
+            "max_value": 90,
+        },
+        {
+            "key": "line_type",
+            "label_ar": "نوع الخط",
+            "label_en": "Line",
+            "field_type": "SEGMENTED",
+            "options_ar": "شريحة إلكترونية\nشريحة عادية",
+            "options_en": "eSIM\nPhysical SIM",
+        },
+    ],
+    "international-licence": [
+        {
+            "key": "licence_number",
+            "label_ar": "رقم رخصة القيادة السعودية",
+            "label_en": "Saudi licence number",
+            "field_type": "TEXT",
+            "is_required": True,
+        },
+        {
+            "key": "travel_date",
+            "label_ar": "تاريخ السفر",
+            "label_en": "Travel date",
+            "field_type": "DATE",
+            "not_past": True,
+        },
+    ],
+}
+
+
 class Command(BaseCommand):
     help = "Load the website's per-service form questions. Safe to re-run."
+
+    @staticmethod
+    def _defaults(spec: dict, order: int) -> dict:
+        return {
+            "label_ar": spec["label_ar"],
+            "label_en": spec["label_en"],
+            "field_type": spec.get("field_type", "TEXT"),
+            "placeholder_ar": spec.get("placeholder_ar", ""),
+            "placeholder_en": spec.get("placeholder_en", ""),
+            "options_ar": spec.get("options_ar", ""),
+            "options_en": spec.get("options_en", ""),
+            "is_required": spec.get("is_required", False),
+            "min_value": spec.get("min_value"),
+            "max_value": spec.get("max_value"),
+            "not_past": spec.get("not_past", False),
+            "not_before": spec.get("not_before", ""),
+            "show_when_key": spec.get("show_when_key", ""),
+            "show_when_value": spec.get("show_when_value", ""),
+            "is_wide": spec.get("is_wide", False),
+            "group_ar": spec.get("group_ar", ""),
+            "group_en": spec.get("group_en", ""),
+            "order": order,
+            "is_active": True,
+        }
 
     def handle(self, *args, **options):
         created = updated = 0
 
         for service_type, rows in FIELDS.items():
             for order, spec in enumerate(rows):
-                defaults = {
-                    "label_ar": spec["label_ar"],
-                    "label_en": spec["label_en"],
-                    "field_type": spec.get("field_type", "TEXT"),
-                    "placeholder_ar": spec.get("placeholder_ar", ""),
-                    "placeholder_en": spec.get("placeholder_en", ""),
-                    "options_ar": spec.get("options_ar", ""),
-                    "options_en": spec.get("options_en", ""),
-                    "is_required": spec.get("is_required", False),
-                    "min_value": spec.get("min_value"),
-                    "max_value": spec.get("max_value"),
-                    "not_past": spec.get("not_past", False),
-                    "not_before": spec.get("not_before", ""),
-                    "show_when_key": spec.get("show_when_key", ""),
-                    "show_when_value": spec.get("show_when_value", ""),
-                    "is_wide": spec.get("is_wide", False),
-                    "group_ar": spec.get("group_ar", ""),
-                    "group_en": spec.get("group_en", ""),
-                    "order": order,
-                    "is_active": True,
-                }
                 _, was_created = InquiryField.objects.update_or_create(
-                    service_type=service_type, key=spec["key"], defaults=defaults
+                    service_type=service_type,
+                    service=None,
+                    key=spec["key"],
+                    defaults=self._defaults(spec, order),
                 )
                 created += int(was_created)
                 updated += int(not was_created)
+
+        # And the questions that belong to one service rather than to a type.
+        from apps.services.models import Service
+
+        services = {service.slug: service for service in Service.objects.all()}
+        missing = []
+        for slug, rows in SERVICE_FIELDS.items():
+            service = services.get(slug)
+            if service is None:
+                missing.append(slug)
+                continue
+            for order, spec in enumerate(rows):
+                defaults = self._defaults(spec, order)
+                defaults["service_type"] = ""
+                _, was_created = InquiryField.objects.update_or_create(
+                    service=service, key=spec["key"], defaults=defaults
+                )
+                created += int(was_created)
+                updated += int(not was_created)
+
+        if missing:
+            self.stdout.write(
+                self.style.WARNING(
+                    "No service yet for: "
+                    + ", ".join(missing)
+                    + " — run seed_demo_services first if you want their questions."
+                )
+            )
 
         # Rows for a service this table no longer describes would keep being
         # asked with nothing here to explain them.
         wanted = {(service, row["key"]) for service, rows in FIELDS.items() for row in rows}
         stale = [
             field
-            for field in InquiryField.objects.all()
+            for field in InquiryField.objects.filter(service__isnull=True)
             if (field.service_type, field.key) not in wanted
         ]
         if stale:

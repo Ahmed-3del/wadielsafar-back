@@ -4,9 +4,13 @@ from apps.visas.models import VisaCountry
 from apps.visas.permissions import VisaPermission
 from apps.visas.serializers import VisaCountrySerializer
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import VISA_COUNTRY_COLUMNS
 
 
-class VisaCountryViewSet(viewsets.ModelViewSet):
+class VisaCountryViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = VISA_COUNTRY_COLUMNS
+    import_key = "name_en"
     serializer_class = VisaCountrySerializer
     permission_classes = (VisaPermission,)
     search_fields = ("name_ar", "name_en")

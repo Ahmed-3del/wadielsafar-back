@@ -5,9 +5,13 @@ from apps.services.models import Service
 from apps.services.permissions import ServicePermission
 from apps.services.serializers import ServiceSerializer
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import SERVICE_COLUMNS
 
 
-class ServiceViewSet(viewsets.ModelViewSet):
+class ServiceViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = SERVICE_COLUMNS
+    import_key = "name_en"
     serializer_class = ServiceSerializer
     permission_classes = (ServicePermission,)
     filterset_class = ServiceFilter

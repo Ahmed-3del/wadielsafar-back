@@ -10,6 +10,18 @@ class Inquiry(TimeStampedModel):
     email = models.EmailField()
     phone = models.CharField(max_length=20, validators=[phone_validator])
     service_type = models.CharField(max_length=20, choices=ServiceTypeChoices.choices)
+    # Which of the Services screen's entries this enquiry came through, when it
+    # came through one. `service_type` stays the bucket the list filters by and
+    # the CRM reads; this says which of the eight things filed under OTHER the
+    # visitor actually asked for. SET_NULL, because deleting a service from the
+    # website must not delete the enquiries it brought in.
+    service = models.ForeignKey(
+        "services.Service",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inquiries",
+    )
     # Nullable: a general/corporate inquiry may not be tied to one destination.
     destination = models.ForeignKey(
         "destinations.Destination",

@@ -8,9 +8,13 @@ from apps.offers.permissions import OfferPermission
 from apps.offers.serializers import OfferSerializer
 from apps.offers.services import OfferService
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import OFFER_COLUMNS
 
 
-class OfferViewSet(viewsets.ModelViewSet):
+class OfferViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = OFFER_COLUMNS
+    import_key = "title_en"
     serializer_class = OfferSerializer
     permission_classes = (OfferPermission,)
     filterset_class = OfferFilter

@@ -3,14 +3,23 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.cruises.filters.cruise_filter import CruiseFilter
-from apps.cruises.models import Cruise
+from apps.cruises.models import Cruise, CruisePort
 from apps.cruises.permissions import CruisePermission
 from apps.cruises.serializers import CruiseDetailSerializer, CruiseSerializer
 from apps.cruises.services import CruiseService
+from apps.destinations.models import Destination
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import CRUISE_COLUMNS
 
 
-class CruiseViewSet(viewsets.ModelViewSet):
+class CruiseViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = CRUISE_COLUMNS
+    import_key = "title_en"
+    import_lookups = {
+        "destination": (Destination, ("name_en", "slug"), False),
+        "departure_port": (CruisePort, ("code", "city_en"), False),
+    }
     permission_classes = (CruisePermission,)
     filterset_class = CruiseFilter
     search_fields = ("title_ar", "title_en", "cruise_line_ar", "cruise_line_en")

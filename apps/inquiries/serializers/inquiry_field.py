@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.inquiries.models import InquiryField, split_options
+from common.constants import ServiceTypeChoices
 
 
 class InquiryFieldSerializer(serializers.ModelSerializer):
@@ -12,12 +13,18 @@ class InquiryFieldSerializer(serializers.ModelSerializer):
     """
 
     options = serializers.SerializerMethodField()
+    # Declared rather than inferred: a question attached to one service has no
+    # type, and DRF makes a model ChoiceField required even when it is blankable.
+    service_type = serializers.ChoiceField(
+        choices=ServiceTypeChoices.choices, required=False, allow_blank=True, default=""
+    )
 
     class Meta:
         model = InquiryField
         fields = (
             "id",
             "service_type",
+            "service",
             "key",
             "label_ar",
             "label_en",
@@ -52,9 +59,37 @@ class InquiryFieldSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         """Runs the model's own rules, which the panel would otherwise skip:
         ModelSerializer does not call full_clean()."""
-        instance = InquiryField(**{**self._current(), **attrs})
+        merged = {**self._current(), **attrs}
+        instance = InquiryField(**merged)
         instance.clean()
+        self._check_key_is_free(merged)
         return attrs
+
+    def _check_key_is_free(self, merged: dict) -> None:
+        """Asked here as well as by the database.
+
+        The two unique constraints carry a condition, and DRF builds validators
+        only from plain unique_together — so without this a duplicate key came
+        back as a 500 from the database driver rather than as "that key is
+        already taken" against the field that has it.
+        """
+        service = merged.get("service")
+        if service is not None:
+            clash = InquiryField.objects.filter(service=service, key=merged.get("key"))
+            where = f"{service.name_en} already asks"
+        else:
+            clash = InquiryField.objects.filter(
+                service__isnull=True,
+                service_type=merged.get("service_type"),
+                key=merged.get("key"),
+            )
+            where = "This service type already asks"
+        if self.instance is not None:
+            clash = clash.exclude(pk=self.instance.pk)
+        if clash.exists():
+            raise serializers.ValidationError(
+                {"key": f"{where} a question filed under \"{merged.get('key')}\"."}
+            )
 
     def _current(self) -> dict:
         if self.instance is None:

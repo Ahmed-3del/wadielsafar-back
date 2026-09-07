@@ -6,10 +6,14 @@ from apps.cruises.permissions import CruisePermission
 from apps.cruises.serializers import CruisePortSerializer
 from apps.cruises.services import CruisePortSearchService
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import CRUISE_PORT_COLUMNS
 from common.pagination import ReferenceDataPagination
 
 
-class CruisePortViewSet(viewsets.ModelViewSet):
+class CruisePortViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = CRUISE_PORT_COLUMNS
+    import_key = "code"
     serializer_class = CruisePortSerializer
     permission_classes = (CruisePermission,)
     filterset_class = CruisePortFilter

@@ -1,3 +1,4 @@
+from apps.inquiries.serializers.form_service import ContactFormServiceSerializer
 from apps.inquiries.serializers.inquiry import (
     InquiryCreateSerializer,
     InquirySerializer,
@@ -10,6 +11,7 @@ __all__ = [
     "InquiryCreateSerializer",
     "InquirySerializer",
     "InquiryStatusUpdateSerializer",
+    "ContactFormServiceSerializer",
     "InquiryFieldSerializer",
     "InquiryServiceTypeSerializer",
 ]

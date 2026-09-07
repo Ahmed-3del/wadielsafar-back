@@ -3,12 +3,20 @@ from rest_framework import serializers
 
 from apps.destinations.models import Destination
 from apps.inquiries.models import Inquiry
+from apps.services.models import Service
 from common.validators import DATE_ORDER_RULES, parse_iso_date
 
 
 class InquiryCreateSerializer(serializers.ModelSerializer):
     destination = serializers.PrimaryKeyRelatedField(
         queryset=Destination.objects.filter(is_active=True), required=False, allow_null=True
+    )
+    # Only a service the form actually offers. Anything else arriving here is a
+    # hand-edited payload, not a visitor.
+    service = serializers.PrimaryKeyRelatedField(
+        queryset=Service.objects.filter(is_active=True, is_on_contact_form=True),
+        required=False,
+        allow_null=True,
     )
 
     class Meta:
@@ -18,6 +26,7 @@ class InquiryCreateSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "service_type",
+            "service",
             "destination",
             "travel_date",
             "message",
@@ -78,6 +87,10 @@ class InquiryCreateSerializer(serializers.ModelSerializer):
 
 
 class InquirySerializer(serializers.ModelSerializer):
+    # Named, not just referenced: the Inquiries list would otherwise show a
+    # number where an agent needs to read "Travel Insurance".
+    service_name = serializers.CharField(source="service.name_en", read_only=True, default="")
+
     class Meta:
         model = Inquiry
         fields = (
@@ -86,6 +99,8 @@ class InquirySerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "service_type",
+            "service",
+            "service_name",
             "destination",
             "travel_date",
             "message",

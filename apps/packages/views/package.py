@@ -2,15 +2,24 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.destinations.models import Destination
 from apps.packages.filters.package_filter import PackageFilter
-from apps.packages.models import Package
+from apps.packages.models import Package, PackageCategory
 from apps.packages.permissions import PackagePermission
 from apps.packages.serializers import PackageDetailSerializer, PackageSerializer
 from apps.packages.services import PackageService
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import PACKAGE_COLUMNS
 
 
-class PackageViewSet(viewsets.ModelViewSet):
+class PackageViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = PACKAGE_COLUMNS
+    import_key = "title_en"
+    import_lookups = {
+        "category": (PackageCategory, ("name_en", "slug"), False),
+        "destination": (Destination, ("name_en", "slug"), False),
+    }
     permission_classes = (PackagePermission,)
     filterset_class = PackageFilter
     search_fields = ("title_ar", "title_en", "description_ar", "description_en")

@@ -22,10 +22,15 @@ from common.utilities import guard_demo_write
 # honest answer for an add-on an agent arranges by hand; the two that have a
 # page of their own point at it.
 #
-# The service type is what the form lands on when the tile leads there. Most of
-# these are add-ons rather than one of the six services an enquiry is filed
-# under, so OTHER is the truthful answer — the tile's own name travels with the
-# link and is filed alongside it, which is what tells the agent which add-on.
+# The service type is the bucket an enquiry for it is filed under. Most of
+# these are add-ons rather than one of the six an enquiry has a column for, so
+# OTHER is the truthful answer there.
+#
+# The ones with no page of their own are also offered on the contact form as a
+# choice of their own, so someone who came for travel insurance picks "Travel
+# insurance" rather than "Other" and an agent can tell the eight apart. The two
+# that lead to /packages and /visas are not: the form already offers Package
+# and Visa, and a second entry saying nearly the same thing is a worse list.
 SERVICES = [
     ("car-rental", "تأجير السيارات", "Car Rental", "car",
      "سيارة في انتظارك عند الوصول، بتأمين وسائق اختياري.",
@@ -82,6 +87,7 @@ class Command(BaseCommand):
                     "description_en": desc_en,
                     "link": link,
                     "service_type": service_type,
+                    "is_on_contact_form": not link,
                     "order": order,
                     "is_active": True,
                 },

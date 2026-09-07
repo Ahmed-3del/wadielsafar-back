@@ -14,5 +14,5 @@ class InquiryFieldViewSet(ActiveForPublicViewSet):
     model = InquiryField
     serializer_class = InquiryFieldSerializer
     permission_classes = (InquiryFieldPermission,)
-    filterset_fields = ("service_type", "is_active")
+    filterset_fields = ("service_type", "service", "is_active")
     ordering_fields = ("service_type", "order")

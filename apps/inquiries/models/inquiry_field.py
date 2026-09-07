@@ -40,12 +40,28 @@ class InquiryField(TimeStampedModel):
     fixed in the website's code. These rows are that difference, so the
     questions asked of a cruise enquiry can change without a deployment.
 
+    A question belongs either to one of the base service types — every flight
+    enquiry asks the same things — or to one particular service from the
+    Services screen, which is how "Travel insurance" gets to ask for a policy
+    start date that no other service wants. A service with no questions of its
+    own falls back to its type's, so adding a service never produces a form
+    that asks nothing.
+
     The answer is filed in `Inquiry.details` under `key`, which is why the key
     is a slug and unique per service: it is a column name in everything that
     reads an inquiry back.
     """
 
-    service_type = models.CharField(max_length=20, choices=ServiceTypeChoices.choices)
+    service_type = models.CharField(
+        max_length=20, choices=ServiceTypeChoices.choices, blank=True
+    )
+    service = models.ForeignKey(
+        "services.Service",
+        on_delete=models.CASCADE,
+        related_name="inquiry_fields",
+        null=True,
+        blank=True,
+    )
     key = models.SlugField(max_length=40)
     label_ar = models.CharField(max_length=120)
     label_en = models.CharField(max_length=120)
@@ -92,14 +108,30 @@ class InquiryField(TimeStampedModel):
     class Meta:
         ordering = ("service_type", "order", "id")
         constraints = [
+            # Two constraints rather than one over both columns: in SQL, NULL
+            # is not equal to NULL, so a single constraint would happily allow
+            # two "depart" questions on FLIGHT as long as both had no service.
             models.UniqueConstraint(
                 fields=("service_type", "key"),
+                condition=models.Q(service__isnull=True),
+                name="unique_inquiry_field_key_per_service_type",
+            ),
+            models.UniqueConstraint(
+                fields=("service", "key"),
+                condition=models.Q(service__isnull=False),
                 name="unique_inquiry_field_key_per_service",
-            )
+            ),
+            models.CheckConstraint(
+                # `check=`, not `condition=`: the rename landed in Django 5.1
+                # and this project is on 5.0.
+                check=models.Q(service__isnull=False) | ~models.Q(service_type=""),
+                name="inquiry_field_belongs_to_something",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.get_service_type_display()} — {self.label_en}"
+        owner = self.service.name_en if self.service_id else self.get_service_type_display()
+        return f"{owner} — {self.label_en}"
 
     def clean(self):
         """A choice list has to be a list, and the two languages have to line up.
@@ -107,6 +139,10 @@ class InquiryField(TimeStampedModel):
         They are zipped by position when the website renders them, so a missing
         line in one language would put an Arabic label on an English answer.
         """
+        if not self.service_id and not self.service_type:
+            raise ValidationError(
+                {"service_type": "Pick the service, or the service type, this question belongs to."}
+            )
         if self.not_before and self.not_before == self.key:
             raise ValidationError({"not_before": "A date cannot be bounded by itself."})
         if self.show_when_key and self.show_when_key == self.key:

@@ -5,9 +5,13 @@ from apps.destinations.models import Destination
 from apps.destinations.permissions import DestinationPermission
 from apps.destinations.serializers import DestinationSerializer
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import DESTINATION_COLUMNS
 
 
-class DestinationViewSet(viewsets.ModelViewSet):
+class DestinationViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = DESTINATION_COLUMNS
+    import_key = "name_en"
     serializer_class = DestinationSerializer
     permission_classes = (DestinationPermission,)
     filterset_class = DestinationFilter

@@ -3,8 +3,9 @@ from unittest.mock import patch
 import pytest
 from rest_framework.test import APIClient
 
-from apps.inquiries.models import InquiryField, InquiryServiceType
+from apps.inquiries.models import Inquiry, InquiryField, InquiryServiceType
 from apps.inquiries.tests.factories import InquiryFactory
+from apps.services.tests.factories import ServiceFactory
 from apps.users.tests.factories import UserFactory
 from common.constants import InquiryStatusChoices, RoleChoices
 
@@ -296,3 +297,177 @@ def test_the_public_cannot_edit_the_service_list():
     )
 
     assert response.status_code == 401
+
+
+# ------------------------------------------- what the contact form offers ---
+
+
+def test_the_form_offers_the_base_types_and_the_services_switched_on():
+    """"Other" is a bad answer to give someone who came for travel insurance."""
+    InquiryServiceType.objects.create(value="FLIGHT", label_ar="طيران", label_en="Flight")
+    ServiceFactory(
+        name_en="Travel Insurance",
+        name_ar="تأمين السفر",
+        service_type="OTHER",
+        is_on_contact_form=True,
+    )
+    ServiceFactory(name_en="Instant Visa", name_ar="تأشيرة", is_on_contact_form=False)
+
+    response = APIClient().get("/api/v1/inquiries/form-services/")
+
+    assert response.status_code == 200
+    offered = [(row["kind"], row["label_en"]) for row in response.data]
+    assert offered == [("TYPE", "Flight"), ("SERVICE", "Travel Insurance")]
+
+
+def test_the_services_come_after_the_types():
+    """So the form opens on flights, not on whichever add-on sorts first."""
+    InquiryServiceType.objects.create(
+        value="FLIGHT", label_ar="طيران", label_en="Flight", order=0
+    )
+    ServiceFactory(name_en="Airport Transfers", name_ar="تنقلات", is_on_contact_form=True)
+
+    orders = [row["order"] for row in APIClient().get("/api/v1/inquiries/form-services/").data]
+
+    assert orders == sorted(orders)
+
+
+def test_a_service_switched_off_is_not_offered():
+    ServiceFactory(name_en="Retired Service", name_ar="خدمة", is_on_contact_form=True, is_active=False)
+
+    assert APIClient().get("/api/v1/inquiries/form-services/").data == []
+
+
+def test_an_enquiry_records_which_service_it_came_through():
+    service = ServiceFactory(
+        name_en="Travel Insurance", name_ar="تأمين", service_type="OTHER", is_on_contact_form=True
+    )
+
+    with patch("apps.inquiries.services.inquiry_service.sync_inquiry_to_zoho.delay"):
+        response = APIClient().post(
+            "/api/v1/inquiries/",
+            {
+                "name": "Sara",
+                "email": "sara@example.com",
+                "phone": "+966501234567",
+                "service_type": "OTHER",
+                "service": service.id,
+            },
+        )
+
+    assert response.status_code == 201, response.data
+    assert Inquiry.objects.get(id=response.data["id"]).service_id == service.id
+
+
+def test_an_enquiry_cannot_name_a_service_the_form_does_not_offer():
+    """Anything arriving here for a hidden service is a hand-edited payload."""
+    service = ServiceFactory(name_en="Hidden", name_ar="مخفي", is_on_contact_form=False)
+
+    response = APIClient().post(
+        "/api/v1/inquiries/",
+        {
+            "name": "Sara",
+            "email": "sara@example.com",
+            "phone": "+966501234567",
+            "service_type": "OTHER",
+            "service": service.id,
+        },
+    )
+
+    assert response.status_code == 400
+
+
+# ------------------------------------------------ one service's questions ---
+
+
+def test_a_question_can_belong_to_one_service():
+    service = ServiceFactory(name_en="Travel Insurance", name_ar="تأمين", is_on_contact_form=True)
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service": service.id,
+            "key": "cover_start",
+            "label_ar": "بداية التغطية",
+            "label_en": "Cover starts",
+            "field_type": "DATE",
+        },
+    )
+
+    assert response.status_code == 201, response.data
+    assert response.data["service"] == service.id
+    assert response.data["service_type"] == ""
+
+
+def test_a_question_must_belong_to_something():
+    """A question attached to neither is asked of nobody."""
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {"key": "orphan", "label_ar": "يتيم", "label_en": "Orphan", "field_type": "TEXT"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_two_services_can_ask_the_same_question_key():
+    """"start_date" means something to both, and they are separate forms."""
+    first = ServiceFactory(name_en="Insurance", name_ar="تأمين", is_on_contact_form=True)
+    second = ServiceFactory(name_en="Car Rental", name_ar="سيارة", is_on_contact_form=True)
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    for service in (first, second):
+        response = client.post(
+            "/api/v1/inquiries/fields/",
+            {
+                "service": service.id,
+                "key": "start_date",
+                "label_ar": "تاريخ البدء",
+                "label_en": "Start date",
+                "field_type": "DATE",
+            },
+        )
+        assert response.status_code == 201, response.data
+
+    assert InquiryField.objects.filter(key="start_date").count() == 2
+
+
+def test_one_service_cannot_ask_the_same_question_twice():
+    service = ServiceFactory(name_en="Insurance", name_ar="تأمين", is_on_contact_form=True)
+    InquiryField.objects.create(
+        service=service, key="start_date", label_ar="تاريخ", label_en="Start", field_type="DATE"
+    )
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+
+    response = client.post(
+        "/api/v1/inquiries/fields/",
+        {
+            "service": service.id,
+            "key": "start_date",
+            "label_ar": "تاريخ آخر",
+            "label_en": "Start again",
+            "field_type": "DATE",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_the_website_can_ask_for_one_service_s_questions():
+    service = ServiceFactory(name_en="Insurance", name_ar="تأمين", is_on_contact_form=True)
+    InquiryField.objects.create(
+        service=service, key="cover_start", label_ar="بداية", label_en="Cover starts"
+    )
+    InquiryField.objects.create(
+        service_type="FLIGHT", key="depart", label_ar="مغادرة", label_en="Departure"
+    )
+
+    response = APIClient().get(f"/api/v1/inquiries/fields/?service={service.id}")
+
+    assert [row["key"] for row in response.data["results"]] == ["cover_start"]

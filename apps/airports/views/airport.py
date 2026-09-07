@@ -6,9 +6,13 @@ from apps.airports.permissions import AirportPermission
 from apps.airports.serializers import AirportSerializer
 from apps.airports.services import AirportSearchService
 from common.constants import STAFF_CONTENT_ROLES
+from common.imports import BulkImportMixin
+from common.imports.columns import AIRPORT_COLUMNS
 
 
-class AirportViewSet(viewsets.ModelViewSet):
+class AirportViewSet(BulkImportMixin, viewsets.ModelViewSet):
+    import_columns = AIRPORT_COLUMNS
+    import_key = "iata_code"
     serializer_class = AirportSerializer
     permission_classes = (AirportPermission,)
     filterset_class = AirportFilter
