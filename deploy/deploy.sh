@@ -691,6 +691,67 @@ cmd_restore() {
     health_check 45 && ok "restored and healthy" || die "unhealthy after restore: deploy/deploy.sh logs web"
 }
 
+# Reference data: the airport and port catalogues, and the questions the
+# contact form asks. Not the company's content — nobody edits these in the
+# panel, every one of them is update_or_create, and none of them deletes. So
+# they are safe to run against a live database as often as you like, and a
+# fresh server needs all four before its search boxes have anything in them.
+REFERENCE_SEEDERS="seed_airports seed_cruise_ports seed_inquiry_fields seed_inquiry_service_types"
+
+# The demo seeders refuse to run when DEBUG is off unless they are pushed, which
+# on a deployed server is always. Detected by name so a new seeder gets the
+# right treatment without anyone remembering to add it here.
+run_seeder() {
+    local name="$1"
+    log "$name"
+    case "$name" in
+        seed_demo*) compose exec -T web python manage.py "$name" --force ;;
+        *)          compose exec -T web python manage.py "$name" ;;
+    esac
+}
+
+cmd_seed() {
+    require_docker
+
+    local with_demo=false
+    local named=()
+    for arg in "$@"; do
+        case "$arg" in
+            --demo|--content) with_demo=true ;;
+            -*) die "unknown option: $arg (try: seed, seed --demo, or seed <seeder_name>...)" ;;
+            *) named+=("$arg") ;;
+        esac
+    done
+
+    # An explicit list wins, because the usual reason to be here is one table
+    # rather than all of them: `seed seed_demo_services` fills the service
+    # tiles and leaves everything else alone.
+    if [ "${#named[@]}" -gt 0 ]; then
+        step "Seeding: ${named[*]}"
+        for name in "${named[@]}"; do run_seeder "$name"; done
+        ok "done"
+        return
+    fi
+
+    step "Reference data"
+    for name in $REFERENCE_SEEDERS; do run_seeder "$name"; done
+    ok "reference data loaded"
+
+    if [ "$with_demo" != "true" ]; then
+        log "Reference data only. Add --demo for the demonstration catalogue as well."
+        return
+    fi
+
+    step "Demo content"
+    warn "The demo seeders reset every row they own back to its shipped value, and"
+    warn "delete the hotels, packages, visas, offers and cruises that are not in them."
+    warn "Anything written in the panel since the last run is lost."
+    confirm "Load the demo catalogue anyway?" \
+        || die "stopped. The reference data above is already loaded."
+    run_seeder seed_demo
+    ok "demo content loaded"
+}
+
 cmd_nginx()     { render_nginx "${SCRIPT_DIR}/nginx/site.conf.template"; }
 cmd_status()    { require_docker; compose ps; }
 cmd_logs()      { require_docker; compose logs -f --tail "${TAIL:-100}" "$@"; }
@@ -722,6 +783,11 @@ Day to day
 Data
   backup               gzip pg_dump into $DATA_DIR/backups (BACKUP_MEDIA=true adds uploads)
   restore <file>       Replace the database with a dump — destructive
+  seed                 Load reference data: airports, cruise ports, contact form
+                       questions and services. Additive, deletes nothing, safe to re-run
+  seed --demo          Also load the demonstration catalogue — this overwrites edits
+                       and deletes rows the seeders do not own. Asks first
+  seed <name...>       Run named seeders only, e.g. seed seed_demo_services
 
 Django
   manage <args...>     manage.py inside the web container
@@ -765,6 +831,7 @@ main() {
         stop|down) cmd_stop "$@" ;;
         backup) cmd_backup "$@" ;;
         restore) cmd_restore "$@" ;;
+        seed) cmd_seed "$@" ;;
         manage) cmd_manage "$@" ;;
         superuser|createsuperuser) cmd_superuser "$@" ;;
         shell|bash) cmd_shell "$@" ;;

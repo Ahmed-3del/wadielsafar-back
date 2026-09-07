@@ -68,7 +68,13 @@ One script drives all of it:
 ./deploy/deploy.sh init        # first deployment: .env, build, migrate, start
 ./deploy/deploy.sh domain      # DNS check, certificate, TLS vhost, auto-renewal
 ./deploy/deploy.sh update      # pull, rebuild, migrate, restart, health-check
+./deploy/deploy.sh seed        # airports, cruise ports, contact form questions
 ```
+
+`seed` loads reference data only — nobody edits it in the panel, nothing is
+deleted, and re-running it is free. `seed --demo` adds the demonstration
+catalogue on top, which resets seeded rows and deletes the hotels, packages,
+visas, offers and cruises the seeders do not own; it asks before it does.
 
 `update` backs up the database first and rolls the code back automatically if
 the new revision fails its health check. Full runbook, including the domain

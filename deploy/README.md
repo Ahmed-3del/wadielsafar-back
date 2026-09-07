@@ -80,6 +80,17 @@ and port, no trailing slash. The refresh-token cookie is `SameSite=None; Secure`
 (see the comment in [config/settings/base.py](../config/settings/base.py)), so
 in production those origins have to be `https://`.
 
+```bash
+# 5. Load the catalogues the site searches against
+./deploy/deploy.sh seed
+```
+
+Airports, cruise ports, and the questions and services the contact form offers.
+Without it the departure, port and service pickers are empty boxes. It deletes
+nothing and is safe to re-run whenever a catalogue grows. On a server that is
+being shown to someone before the client's own content exists, `seed --demo`
+adds the demonstration catalogue too — see §5.
+
 At this point the API answers on loopback but returns **503 from nginx** on the
 public internet. That is deliberate: production settings set
 `SECURE_SSL_REDIRECT = True`, so serving it over plain HTTP would just 301-loop.
@@ -279,6 +290,8 @@ useless for a dead server — copy them off-box:
 ./deploy/deploy.sh status                 # docker compose ps
 ./deploy/deploy.sh logs web               # follow one service (TAIL=500 for more)
 ./deploy/deploy.sh restart                # recreate web + worker, e.g. after editing .env
+./deploy/deploy.sh seed                   # reference data (safe, additive, re-runnable)
+./deploy/deploy.sh seed seed_demo_services  # or one named seeder
 ./deploy/deploy.sh manage showmigrations  # any manage.py command
 ./deploy/deploy.sh superuser
 ./deploy/deploy.sh shell                  # bash in the web container
