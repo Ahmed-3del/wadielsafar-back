@@ -28,7 +28,19 @@ def test_the_shipped_running_order_is_there():
     response = APIClient().get(LIST_URL, {"page_size": 20})
 
     assert response.status_code == 200
-    assert keys(response)[0] == "SERVICES"
+    assert keys(response)[0] == "RECOMMENDATIONS"
+
+
+def test_the_search_cross_sell_is_a_section_like_any_other():
+    """It used to be hard-coded directly under the search results with no row
+    here and nothing an editor could do about it."""
+    order = ["TRUST", "RECOMMENDATIONS", "CTA"]
+
+    response = as_editor().post(REORDER_URL, {"keys": order}, format="json")
+
+    assert response.status_code == 200, response.data
+    positions = {s.key: s.order for s in HomeSection.objects.all()}
+    assert positions["TRUST"] < positions["RECOMMENDATIONS"] < positions["CTA"]
 
 
 def test_public_sees_only_the_sections_that_are_switched_on():
