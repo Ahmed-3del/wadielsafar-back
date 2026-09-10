@@ -8,9 +8,9 @@ class HomeSectionChoices(models.TextChoices):
 
     The hero is deliberately absent: it carries the booking widget, which is
     the page's whole reason for existing, so it is always first and cannot be
-    switched off. Everything below it is the editor's to arrange — RECOMMENDATIONS
-    included, which used to be hard-coded directly under the search results and
-    is now a section like any other.
+    switched off. Everything below it is the editor's to arrange —
+    RECOMMENDATIONS and LOYALTY included, both of which used to be hard-coded
+    at a fixed point on the page and are now sections like any other.
 
     A key here needs a matching component on the site. The frontend skips a key
     it does not recognise, so adding one to this list without shipping the
@@ -22,6 +22,10 @@ class HomeSectionChoices(models.TextChoices):
     # positioned away from the search box, because both read the same client
     # state — see src/components/search/search-tab-context.tsx on the frontend.
     RECOMMENDATIONS = "RECOMMENDATIONS", "You might also like (search cross-sell)"
+    # The Orbit membership pitch. The programme itself lives off-site — this
+    # is only the band that gets a visitor to notice it exists — so nothing
+    # here depends on the reader's answer to the search above it.
+    LOYALTY = "LOYALTY", "Loyalty programme banner"
     SERVICES = "SERVICES", "What we offer"
     SAVINGS = "SAVINGS", "Ways to save"
     EXPLORER = "EXPLORER", "Budget explorer"
