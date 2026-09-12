@@ -145,6 +145,7 @@ FLIGHT_COLUMNS = [
     text("airline_name_en", "Airline in English."),
     text("airline_name_ar", "Airline in Arabic."),
     text("airline_logo", "A full https:// image URL."),
+    text("cover_image", "A full https:// image URL. Shown as the card's photo."),
     choice("trip_type", TripTypeChoices),
     choice("cabin_class", CabinClassChoices),
     text("departure_date", "yyyy-mm-dd."),

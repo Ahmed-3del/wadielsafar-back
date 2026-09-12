@@ -125,6 +125,22 @@ def test_editor_can_add_a_branch(clean_company):
     assert Branch.objects.get().phone_display == "+966 11 560 2558"
 
 
+def test_a_branch_can_carry_its_own_working_hours(clean_company):
+    response = as_editor().post(
+        "/api/v1/company/branches/",
+        {
+            "name_ar": "فرع جديد",
+            "name_en": "New branch",
+            "phone": "+966115602558",
+            "working_hours_ar": "السبت – الخميس: ٩ ص – ٩ م",
+            "working_hours_en": "Sat–Thu: 9am–9pm",
+        },
+    )
+
+    assert response.status_code == 201, response.data
+    assert response.data["working_hours_en"] == "Sat–Thu: 9am–9pm"
+
+
 def test_a_branch_phone_has_to_look_like_a_phone_number(clean_company):
     response = as_editor().post(
         "/api/v1/company/branches/",

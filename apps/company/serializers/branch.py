@@ -14,6 +14,8 @@ class BranchSerializer(serializers.ModelSerializer):
             "phone_display",
             "address_ar",
             "address_en",
+            "working_hours_ar",
+            "working_hours_en",
             "latitude",
             "longitude",
             "google_maps_url",

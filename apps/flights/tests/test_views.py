@@ -81,3 +81,26 @@ def test_content_manager_can_create_a_deal():
     assert response.status_code == 201
     assert response.data["origin_airport_code"] == "RUH"
     assert response.data["slug"] == "riyadh-to-dubai"
+
+
+def test_a_deal_can_carry_its_own_cover_photo():
+    client = APIClient()
+    client.force_authenticate(user=UserFactory(role=RoleChoices.EDITOR))
+    response = client.post(
+        "/api/v1/flights/",
+        {
+            "title_ar": "الرياض إلى دبي",
+            "title_en": "Riyadh to Dubai",
+            "origin_city_ar": "الرياض",
+            "origin_city_en": "Riyadh",
+            "origin_airport_code": "RUH",
+            "destination_city_ar": "دبي",
+            "destination_city_en": "Dubai",
+            "destination_airport_code": "DXB",
+            "trip_type": "ONE_WAY",
+            "price_from": "1200.00",
+            "cover_image": "https://cdn.example.com/dubai.jpg",
+        },
+    )
+    assert response.status_code == 201, response.data
+    assert response.data["cover_image"] == "https://cdn.example.com/dubai.jpg"

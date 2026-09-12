@@ -38,6 +38,10 @@ class FlightDeal(TimeStampedModel):
     airline_name_ar = models.CharField(max_length=120, blank=True)
     airline_name_en = models.CharField(max_length=120, blank=True)
     airline_logo = models.URLField(max_length=500, blank=True, null=True)
+    # A photo of the route — the destination, usually. Blank shows the card's
+    # own brand-coloured block instead of a picture, the same fallback every
+    # other card with an optional cover already uses.
+    cover_image = models.URLField(max_length=500, blank=True, null=True)
     trip_type = models.CharField(
         max_length=20, choices=TripTypeChoices.choices, default=TripTypeChoices.ROUND_TRIP
     )

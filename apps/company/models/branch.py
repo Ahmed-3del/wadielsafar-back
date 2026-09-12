@@ -16,6 +16,11 @@ class Branch(TimeStampedModel):
     # One line, in reading order: neighbourhood, street, city.
     address_ar = models.CharField(max_length=255, blank=True)
     address_en = models.CharField(max_length=255, blank=True)
+    # Free text rather than a per-day schedule — "Sat–Thu: 9am–9pm · Fri:
+    # Closed" fits a branch card in one line, where a table of seven rows
+    # would not. Blank hides the row rather than printing empty hours.
+    working_hours_ar = models.CharField(max_length=200, blank=True)
+    working_hours_en = models.CharField(max_length=200, blank=True)
     # Drives the mini map and the "view on map" link. Blank hides the map and
     # leaves the address as text, which is better than a pin in the sea.
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)

@@ -27,6 +27,7 @@ class FlightDealSerializer(serializers.ModelSerializer):
             "airline_name_ar",
             "airline_name_en",
             "airline_logo",
+            "cover_image",
             "trip_type",
             "cabin_class",
             "price_from",
