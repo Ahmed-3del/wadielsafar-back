@@ -7,15 +7,15 @@ from common.utilities import TimeStampedModel
 class PageKeyChoices(models.TextChoices):
     """One row per top-level route on the customer site.
 
-    HOME is deliberately absent: the homepage's full-height photo hero was
-    replaced by the search band going first instead — a photograph before the
-    search someone arrived to use was the wrong way round — and nothing on
-    the homepage has read this table since. A "Home" row an editor could
-    still open and change looked exactly as live as any other, and did
-    nothing; removing the choice is what makes that true rather than leaving
-    it to be discovered by editing it. See the migration that dropped it.
+    HOME backs the search band at the top of the homepage, not a full-height
+    photo hero — that design was replaced by the search band going first
+    instead. Its background (media_type/image/video/overlay) is what
+    HomeSearch renders behind the search widget; its copy fields go unused
+    there on purpose, since the band keeps its own translated heading rather
+    than one an editor could leave half set.
     """
 
+    HOME = "home", "Home"
     DESTINATIONS = "destinations", "Destinations"
     PACKAGES = "packages", "Packages"
     VISAS = "visas", "Visas"
