@@ -11,7 +11,7 @@ pytestmark = pytest.mark.django_db
 
 def _hero(**overrides):
     defaults = {
-        "page_key": "home",
+        "page_key": "about",  # any valid key; the value itself is not under test here
         "media_type": HeroMediaChoices.IMAGE,
         "image_url": "https://cdn.example.com/hero.jpg",
     }
@@ -20,14 +20,14 @@ def _hero(**overrides):
 
 def test_public_can_read_active_hero_by_page_key():
     _hero()
-    response = APIClient().get("/api/v1/pages/heroes/home/")
+    response = APIClient().get("/api/v1/pages/heroes/about/")
     assert response.status_code == 200
     assert response.data["media_type"] == "IMAGE"
 
 
 def test_public_cannot_see_inactive_hero():
     _hero(is_active=False)
-    assert APIClient().get("/api/v1/pages/heroes/home/").status_code == 404
+    assert APIClient().get("/api/v1/pages/heroes/about/").status_code == 404
 
 
 def test_public_cannot_write():
@@ -67,6 +67,6 @@ def test_gradient_hero_needs_no_media():
 
 def test_page_key_is_unique():
     _hero()
-    serializer = PageHeroSerializer(data={"page_key": "home", "media_type": "NONE"})
+    serializer = PageHeroSerializer(data={"page_key": "about", "media_type": "NONE"})
     assert not serializer.is_valid()
     assert "page_key" in serializer.errors

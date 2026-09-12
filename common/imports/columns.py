@@ -14,6 +14,10 @@ A column is:
     help      one line, in the template
 """
 
+from apps.flights.models import CabinClassChoices, TripTypeChoices
+from apps.services.models import ServiceIconChoices
+from common.constants import ServiceTypeChoices, VisaEntryChoices, VisaPurposeChoices
+
 
 def text(name, help_text, *, required=False, field=None):
     column = {"name": name, "help": help_text, "required": required}
@@ -28,6 +32,31 @@ def flag(name, help_text):
 
 def ref(name, help_text, *, required=False, field=None):
     return text(name, help_text, required=required, field=field or f"{name}_id")
+
+
+def choice(name, choices, help_text="", *, required=False, field=None):
+    """A column whose value has to be one of a fixed set — read from the
+    model's own `TextChoices`, not typed out by hand in this file.
+
+    Hand-typing the list is exactly how this drifted: the visa import once
+    told an agent to type TOURIST, WORK, TRANSIT, MEDICAL or FAMILY — four of
+    which `VisaPurposeChoices` has never accepted — while never mentioning
+    OTHER, which it does. A whole sheet of visas failed, and the serializer
+    was never wrong: only what an agent was told to type into the sheet was,
+    a comment away from the model and nothing to keep the two in step.
+    Reading the list from the enum means this file cannot say something the
+    model does not — a value added or renamed here shows up in the next
+    template without anyone remembering to change this file too.
+    """
+    values = ", ".join(choices.values)
+    # "A, B, C or D." rather than an Oxford comma before the last one, to
+    # match every other list already written this way in this file.
+    parts = values.rsplit(", ", 1)
+    listed = " or ".join(parts) if len(parts) == 2 else values
+    sentence = f"{listed}."
+    if help_text:
+        sentence = f"{sentence} {help_text}"
+    return text(name, sentence, required=required, field=field)
 
 
 BILINGUAL = "Arabic and English are separate columns; both are shown to visitors."
@@ -116,8 +145,8 @@ FLIGHT_COLUMNS = [
     text("airline_name_en", "Airline in English."),
     text("airline_name_ar", "Airline in Arabic."),
     text("airline_logo", "A full https:// image URL."),
-    text("trip_type", "ROUND_TRIP or ONE_WAY."),
-    text("cabin_class", "ECONOMY, PREMIUM_ECONOMY, BUSINESS or FIRST."),
+    choice("trip_type", TripTypeChoices),
+    choice("cabin_class", CabinClassChoices),
     text("departure_date", "yyyy-mm-dd."),
     text("return_date", "yyyy-mm-dd. Leave blank on a one-way."),
     text("baggage_allowance_kg", "A whole number of kilos."),
@@ -140,8 +169,8 @@ VISA_TYPE_COLUMNS = [
     text("price", "Digits only.", required=True),
     text("processing_time_days", "A whole number of days.", required=True),
     text("validity_days", "How long it stays valid, in days."),
-    text("purpose", "TOURIST, BUSINESS, STUDY, WORK, TRANSIT, MEDICAL, FAMILY or UMRAH."),
-    text("entry_type", "SINGLE, MULTIPLE or DOUBLE."),
+    choice("purpose", VisaPurposeChoices, "Leave blank and it shows under every purpose instead of one."),
+    choice("entry_type", VisaEntryChoices, "Leave blank where it varies by applicant."),
     text("requirements_en", "What the applicant must provide, one per line."),
     text("requirements_ar", "The same in Arabic."),
     text("cover_image", "A full https:// image URL."),
@@ -179,7 +208,7 @@ PACKAGE_COLUMNS = [
 OFFER_COLUMNS = [
     text("title_en", "The offer in English. Rows are matched on this.", required=True),
     text("title_ar", "The offer in Arabic.", required=True),
-    text("service_type", "FLIGHT, HOTEL, PACKAGE, VISA, CRUISE, CORPORATE or OTHER.", required=True),
+    choice("service_type", ServiceTypeChoices, required=True),
     text("starts_at", "yyyy-mm-dd.", required=True),
     text("ends_at", "yyyy-mm-dd. The offer disappears from the website after this.", required=True),
     text("price_before", "The old price, digits only. Leave blank for 'price on request'."),
@@ -196,9 +225,9 @@ SERVICE_COLUMNS = [
     text("name_ar", "The service in Arabic.", required=True),
     text("description_en", "One line, shown on the tile."),
     text("description_ar", "The same in Arabic."),
-    text("icon", "One of the panel's icon keys, e.g. car, shield, passport."),
+    choice("icon", ServiceIconChoices),
     text("link", "Where the tile leads, as a path on this site, e.g. /visas. Blank means the contact form."),
-    text("service_type", "What the contact form opens on: FLIGHT, HOTEL, PACKAGE, VISA, CRUISE, CORPORATE or OTHER."),
+    choice("service_type", ServiceTypeChoices, "What the contact form opens on."),
     text("image", "A full https:// image URL."),
     text("order", "Lower numbers come first."),
     flag("is_active", "No hides it from the website."),
