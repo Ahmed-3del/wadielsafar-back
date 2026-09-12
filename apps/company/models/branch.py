@@ -16,9 +16,6 @@ class Branch(TimeStampedModel):
     # One line, in reading order: neighbourhood, street, city.
     address_ar = models.CharField(max_length=255, blank=True)
     address_en = models.CharField(max_length=255, blank=True)
-    # A photo of the office — the storefront or the desk, usually. Blank
-    # shows the map preview in its place instead of an empty frame.
-    cover_image = models.URLField(max_length=500, blank=True, null=True)
     # Free text rather than a per-day schedule — "Sat–Thu: 9am–9pm · Fri:
     # Closed" fits a branch card in one line, where a table of seven rows
     # would not. Blank hides the row rather than printing empty hours.

@@ -169,21 +169,6 @@ def test_a_branch_can_carry_its_own_google_maps_listing(clean_company):
     assert response.data["google_maps_url"] == "https://maps.app.goo.gl/example"
 
 
-def test_a_branch_can_carry_its_own_cover_photo(clean_company):
-    response = as_editor().post(
-        "/api/v1/company/branches/",
-        {
-            "name_ar": "فرع",
-            "name_en": "Branch",
-            "phone": "+966115602558",
-            "cover_image": "https://cdn.example.com/branch.jpg",
-        },
-    )
-
-    assert response.status_code == 201, response.data
-    assert response.data["cover_image"] == "https://cdn.example.com/branch.jpg"
-
-
 def test_the_shipped_branches_are_there():
     """They used to be hardcoded in the frontend; the migration moved them, and
     losing them would silently empty the footer."""
