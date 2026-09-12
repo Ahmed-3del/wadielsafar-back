@@ -16,6 +16,7 @@ class BranchSerializer(serializers.ModelSerializer):
             "address_en",
             "latitude",
             "longitude",
+            "google_maps_url",
             "is_main",
             "order",
             "is_active",

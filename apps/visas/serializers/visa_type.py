@@ -26,6 +26,7 @@ class VisaTypeSerializer(serializers.ModelSerializer):
             "price",
             "processing_time_days",
             "validity_days",
+            "is_featured",
             "is_active",
         )
         read_only_fields = ("id",)

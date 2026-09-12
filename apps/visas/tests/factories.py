@@ -21,4 +21,5 @@ class VisaTypeFactory(factory.django.DjangoModelFactory):
     name_en = factory.Sequence(lambda n: f"Visa {n}")
     price = "300.00"
     processing_time_days = 5
+    is_featured = False
     is_active = True

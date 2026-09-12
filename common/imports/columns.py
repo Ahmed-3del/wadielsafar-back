@@ -174,6 +174,7 @@ VISA_TYPE_COLUMNS = [
     text("requirements_en", "What the applicant must provide, one per line."),
     text("requirements_ar", "The same in Arabic."),
     text("cover_image", "A full https:// image URL."),
+    flag("is_featured", "Yes puts it in the homepage's visa rail."),
     flag("is_active", "No hides it from the website."),
 ]
 

@@ -8,4 +8,4 @@ class VisaTypeFilter(django_filters.FilterSet):
 
     class Meta:
         model = VisaType
-        fields = ("country", "purpose", "is_active")
+        fields = ("country", "purpose", "is_active", "is_featured")

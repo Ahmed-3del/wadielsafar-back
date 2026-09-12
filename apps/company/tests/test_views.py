@@ -1,10 +1,11 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.company.models import Branch, Certificate, Promotion, SocialLink
+from apps.company.models import Branch, Certificate, PromoBar, Promotion, SocialLink
 from apps.company.tests.factories import (
     BranchFactory,
     CertificateFactory,
+    PromoBarFactory,
     PromotionFactory,
     SocialLinkFactory,
 )
@@ -16,12 +17,14 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def clean_company():
-    """Branches and social links ship in a data migration, so they are already
-    in the test database. Tests that count rows need to start from empty."""
+    """Branches, social links and the promo bar ship in a data migration, so
+    they are already in the test database. Tests that count rows need to
+    start from empty."""
     Branch.objects.all().delete()
     SocialLink.objects.all().delete()
     Certificate.objects.all().delete()
     Promotion.objects.all().delete()
+    PromoBar.objects.all().delete()
 
 
 def as_editor():
@@ -130,6 +133,24 @@ def test_a_branch_phone_has_to_look_like_a_phone_number(clean_company):
 
     assert response.status_code == 400
     assert "phone" in str(response.data).lower()
+
+
+def test_a_branch_can_carry_its_own_google_maps_listing(clean_company):
+    """Coordinates alone can only ever open a search; a pasted Maps link is
+    what lets 'view on map' land on the branch's real listing — its own name,
+    photo and reviews — instead of a pin labelled with a lat/lng string."""
+    response = as_editor().post(
+        "/api/v1/company/branches/",
+        {
+            "name_ar": "فرع",
+            "name_en": "Branch",
+            "phone": "+966115602558",
+            "google_maps_url": "https://maps.app.goo.gl/example",
+        },
+    )
+
+    assert response.status_code == 201, response.data
+    assert response.data["google_maps_url"] == "https://maps.app.goo.gl/example"
 
 
 def test_the_shipped_branches_are_there():
@@ -268,3 +289,91 @@ def test_a_blank_promotion_link_is_allowed(clean_company):
 
     assert response.status_code == 201, response.data
     assert response.data["link"] == ""
+
+
+# ---------------------------------------------------------------- promo bar
+
+
+def test_public_reads_the_active_promo_bar(clean_company):
+    PromoBarFactory(headline_en="15% off", code="WELCOME15", is_active=True)
+
+    response = APIClient().get("/api/v1/company/promo-bar/")
+
+    assert response.status_code == 200
+    assert response.data["headline_en"] == "15% off"
+    assert response.data["code"] == "WELCOME15"
+
+
+def test_public_gets_nothing_while_the_promo_bar_is_switched_off(clean_company):
+    """Pausing an offer has to actually hide it — an editor preparing next
+    month's wording is not ready for a visitor to see it yet."""
+    PromoBarFactory(is_active=False)
+
+    assert APIClient().get("/api/v1/company/promo-bar/").status_code == 404
+
+
+def test_an_editor_still_sees_it_while_switched_off(clean_company):
+    """Otherwise there would be no way to read it back in the panel in order
+    to turn it on again."""
+    PromoBarFactory(headline_en="Ramadan offer", is_active=False)
+
+    response = as_editor().get("/api/v1/company/promo-bar/")
+
+    assert response.status_code == 200
+    assert response.data["headline_en"] == "Ramadan offer"
+    assert response.data["is_active"] is False
+
+
+def test_public_cannot_change_the_promo_bar(clean_company):
+    PromoBarFactory(headline_en="Old wording")
+
+    response = APIClient().patch(
+        "/api/v1/company/promo-bar/", {"headline_en": "Hacked"}
+    )
+
+    assert response.status_code in (401, 403)
+    assert PromoBar.objects.get().headline_en == "Old wording"
+
+
+def test_an_editor_can_change_the_promo_bar(clean_company):
+    PromoBarFactory(headline_en="Old wording", code="OLD10")
+
+    response = as_editor().patch(
+        "/api/v1/company/promo-bar/",
+        {"headline_en": "New season, new savings", "code": "SEASON20"},
+    )
+
+    assert response.status_code == 200, response.data
+    promo_bar = PromoBar.objects.get()
+    assert promo_bar.headline_en == "New season, new savings"
+    assert promo_bar.code == "SEASON20"
+
+
+def test_there_is_always_exactly_one_promo_bar_to_edit(clean_company):
+    """No create endpoint exists — editing always lands on the same row,
+    whether the request arrives before or after one has been created."""
+    as_editor().patch("/api/v1/company/promo-bar/", {"headline_en": "Changed"})
+    second = as_editor().get("/api/v1/company/promo-bar/").data
+
+    assert PromoBar.objects.count() == 1
+    assert second["headline_en"] == "Changed"
+
+
+def test_a_promo_bar_link_must_be_a_path_on_this_site(clean_company):
+    PromoBarFactory()
+
+    response = as_editor().patch(
+        "/api/v1/company/promo-bar/", {"link": "https://example.com"}
+    )
+
+    assert response.status_code == 400
+
+
+def test_a_blank_promo_bar_code_hides_the_chip(clean_company):
+    """Not every offer needs a code to quote."""
+    PromoBarFactory(code="WELCOME15")
+
+    response = as_editor().patch("/api/v1/company/promo-bar/", {"code": ""})
+
+    assert response.status_code == 200, response.data
+    assert response.data["code"] == ""

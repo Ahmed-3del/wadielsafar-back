@@ -20,6 +20,11 @@ class Branch(TimeStampedModel):
     # leaves the address as text, which is better than a pin in the sea.
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    # This branch's own listing, pasted from Google Maps' Share button — the
+    # coordinates above can only ever open a search, which is a pin labelled
+    # with a lat/lng string, not the branch's real name, photo and reviews.
+    # Blank falls back to searching by name and address instead.
+    google_maps_url = models.URLField(max_length=500, blank=True)
     # The head office, called out with a border and a badge. Exactly one is
     # expected; nothing breaks if there are none.
     is_main = models.BooleanField(default=False)

@@ -1,6 +1,6 @@
 import factory
 
-from apps.company.models import Branch, Certificate, Promotion, SocialLink
+from apps.company.models import Branch, Certificate, PromoBar, Promotion, SocialLink
 
 
 class CertificateFactory(factory.django.DjangoModelFactory):
@@ -46,4 +46,16 @@ class PromotionFactory(factory.django.DjangoModelFactory):
     badge_ar = "15%"
     badge_en = "15%"
     icon = "TAG"
+    is_active = True
+
+
+class PromoBarFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = PromoBar
+
+    headline_ar = "خصم لعملاء جدد"
+    headline_en = "New customer discount"
+    code = "WELCOME15"
+    cta_label_ar = "احجز الآن"
+    cta_label_en = "Book now"
     is_active = True

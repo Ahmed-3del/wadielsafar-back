@@ -63,3 +63,15 @@ def test_visa_type_without_a_purpose_is_not_filed_under_one():
 
     assert filtered.data["count"] == 0
     assert unfiltered.data["count"] == 1
+
+
+def test_is_featured_filters_visa_types():
+    """The homepage's own rail is an editor's pick, not everything active."""
+    country = VisaCountryFactory(is_active=True)
+    VisaTypeFactory(country=country, name_en="Picked", is_featured=True, is_active=True)
+    VisaTypeFactory(country=country, name_en="Not picked", is_featured=False, is_active=True)
+
+    response = APIClient().get("/api/v1/visas/", {"is_featured": "true"})
+
+    assert response.status_code == 200
+    assert [row["name_en"] for row in response.data["results"]] == ["Picked"]

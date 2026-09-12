@@ -30,6 +30,9 @@ class VisaType(TimeStampedModel):
     # مدة الصلاحية — nullable because it varies by applicant for some visas and
     # a wrong number here is worse than none.
     validity_days = models.PositiveIntegerField(null=True, blank=True)
+    # Which visas the homepage's own rail shows — an editorial pick, not
+    # whatever the alphabetical order happens to put first.
+    is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
     class Meta:
